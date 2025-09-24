@@ -1,11 +1,14 @@
 export type UserRole = "reporter" | "finder" | "rc_staff" | "police" | "admin";
 
+export type UserStatus = "active" | "suspended" | "archived";
+
 export type User = {
   id: string;
   name: string;
   email: string;
   avatarUrl: string;
   role: UserRole;
+  status: UserStatus;
 };
 
 export type DocumentReport = {
