@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -31,8 +32,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { UserRole } from "@/lib/types";
+import type { User, UserRole } from "@/lib/types";
 import Link from "next/link";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { useEffect, useState } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -44,6 +47,11 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     const user = users.find(u => u.id === params.id);
     const { toast } = useToast();
     const router = useRouter();
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+    useEffect(() => {
+        getAuthenticatedUser().then(setCurrentUser);
+    }, []);
 
     if (!user) {
         notFound();
@@ -69,7 +77,9 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         router.push("/admin");
     }
 
-    const userRoles: UserRole[] = ["admin", "rc_staff", "police", "reporter", "finder"];
+    const availableRoles: UserRole[] = currentUser?.role === 'admin' 
+        ? ["admin", "rc_staff", "police", "reporter", "finder"]
+        : ["reporter", "finder"];
 
     return (
         <Form {...form}>
@@ -119,7 +129,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                     </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                    {userRoles.map(role => (
+                                    {availableRoles.map(role => (
                                         <SelectItem key={role} value={role} className="capitalize">
                                             {role.replace('_', ' ')}
                                         </SelectItem>
