@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, SlidersHorizontal, Eye } from "lucide-react";
+import { MoreHorizontal, SlidersHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { users as initialUsers } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -187,7 +187,7 @@ export default function AdminPage() {
                         <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person face" />
                         <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
-                     <Link href={`/admin/users/${user.id}`} className="hover:underline">{user.name}</Link>
+                     <Link href={`/admin/users/${user.id}`} className="hover:underline font-semibold">{user.name}</Link>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -200,7 +200,7 @@ export default function AdminPage() {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{user.credibilityScore}%</span>
-                    <Progress value={100 - user.credibilityScore} className="h-2 w-24" indicatorClassName={getFraudBarColor(user.credibilityScore)} />
+                    <Progress value={user.credibilityScore} className="h-2 w-24" indicatorClassName={getFraudBarColor(user.credibilityScore)} />
                   </div>
                 </TableCell>
                 <TableCell>
@@ -219,13 +219,18 @@ export default function AdminPage() {
                             View
                          </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href={`/admin/users/${user.id}/edit`}>Edit</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/admin/users/${user.id}/edit`}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </DropdownMenuItem>
                        <DropdownMenuItem onClick={() => handleUserStatusChange(user.id, user.status === 'suspended' ? 'active' : 'suspended')}>
                         {user.status === 'suspended' ? 'Un-suspend' : 'Suspend'}
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href="#">Track Activity</Link></DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-destructive" onClick={() => handleUserStatusChange(user.id, 'archived')}>
+                        <Trash2 className="mr-2 h-4 w-4" />
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>

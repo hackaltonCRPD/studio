@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -24,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, File } from "lucide-react";
+import { MoreHorizontal, File, Eye } from "lucide-react";
 import { documents as initialDocuments } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
@@ -63,6 +64,19 @@ export default function SearchDocumentsPage() {
     const types = new Set(initialDocuments.map(doc => doc.documentType));
     return Array.from(types);
   }, []);
+
+    const getStatusVariant = (status: "lost" | "found" | "claimed") => {
+        switch (status) {
+        case 'lost':
+            return 'destructive';
+        case 'found':
+            return 'secondary';
+        case 'claimed':
+            return 'default';
+        default:
+            return 'outline';
+        }
+    }
 
   return (
     <Card>
@@ -137,9 +151,11 @@ export default function SearchDocumentsPage() {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="font-medium">{doc.documentType}</TableCell>
+                <TableCell className="font-medium">
+                    <Link href={`/documents/${doc.id}`} className="hover:underline font-semibold">{doc.documentType}</Link>
+                </TableCell>
                 <TableCell>
-                  <Badge variant={doc.status === 'lost' ? 'destructive' : doc.status === 'found' ? 'secondary' : 'default'} className="capitalize">{doc.status}</Badge>
+                  <Badge variant={getStatusVariant(doc.status)} className="capitalize">{doc.status}</Badge>
                 </TableCell>
                 <TableCell>{doc.location}</TableCell>
                 <TableCell className="hidden md:table-cell">{doc.reportDate}</TableCell>
@@ -153,9 +169,12 @@ export default function SearchDocumentsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem asChild><Link href={`/documents/${doc.id}`}>View Details</Link></DropdownMenuItem>
-                      <DropdownMenuItem>Mark as Found</DropdownMenuItem>
-                      <DropdownMenuItem>Mark as Claimed</DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/documents/${doc.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                        </Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
