@@ -99,7 +99,9 @@ export default function RCStaffDashboardPage() {
             <TableBody>
                 {pendingClaims.map(item => (
                      <TableRow key={item.id}>
-                        <TableCell className="font-mono">{item.id}</TableCell>
+                        <TableCell>
+                            <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
+                        </TableCell>
                         <TableCell className="font-medium">{item.documentType}</TableCell>
                         <TableCell>{item.claimantName}</TableCell>
                         <TableCell>{new Date().toLocaleDateString()}</TableCell>
@@ -139,7 +141,9 @@ export default function RCStaffDashboardPage() {
                     <TableBody>
                          {recentHandovers.map(item => (
                             <TableRow key={item.id}>
-                                <TableCell className="font-mono">{item.id}</TableCell>
+                                <TableCell>
+                                    <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
+                                </TableCell>
                                 <TableCell className="font-medium">{item.documentType}</TableCell>
                                 <TableCell>Jane Doe</TableCell>
                                 <TableCell>{item.reportDate}</TableCell>

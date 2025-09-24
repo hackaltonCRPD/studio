@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, ShieldAlert, X } from "lucide-react";
 import { documents } from "@/lib/data";
+import Link from "next/link";
 
 // Mock data for escalated cases - in a real app this would come from an API
 const escalatedCases = documents.filter(d => d.status === 'found').slice(0, 3).map(d => ({...d, escalationReason: "Multiple claims"}));
@@ -60,14 +61,18 @@ export default function PoliceDashboardPage() {
                     <TableBody>
                         {escalatedCases.map((item) => (
                         <TableRow key={item.id}>
-                            <TableCell className="font-mono">{item.id}</TableCell>
+                            <TableCell>
+                                <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
+                            </TableCell>
                             <TableCell className="font-medium">{item.documentType}</TableCell>
                             <TableCell>
                                 <Badge variant="destructive">{item.escalationReason}</Badge>
                             </TableCell>
                             <TableCell>{item.reportDate}</TableCell>
                             <TableCell className="flex gap-2">
-                                <Button size="sm" variant="outline">View Details</Button>
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link href={`/documents/${item.id}`}>View Details</Link>
+                                </Button>
                                 <Button size="sm">
                                     <Check className="mr-2 h-4 w-4" />
                                     Approve Claim
