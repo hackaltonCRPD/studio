@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, File } from "lucide-react";
 import { documents } from "@/lib/data";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function SearchDocumentsPage() {
   return (
@@ -86,7 +87,7 @@ export default function SearchDocumentsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href={`/documents/${doc.id}`}>View Details</Link></DropdownMenuItem>
                       <DropdownMenuItem>Mark as Found</DropdownMenuItem>
                       <DropdownMenuItem>Mark as Claimed</DropdownMenuItem>
                     </DropdownMenuContent>
