@@ -98,9 +98,11 @@
   }
 
   .animate-fade-in-down {
+    animation: fade-in-down 0.8s ease-out forwards;
     animation-fill-mode: both;
   }
   .animate-fade-in-slide-up {
+    animation: fade-in-slide-up 0.8s ease-out forwards;
     animation-fill-mode: both;
   }
 }
