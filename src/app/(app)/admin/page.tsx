@@ -30,23 +30,30 @@ import { users as initialUsers } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useState, useMemo } from "react";
-import type { User, UserStatus } from "@/lib/types";
+import type { User, UserStatus, UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const { toast } = useToast();
   const [credibilityFilter, setCredibilityFilter] = useState<[number, number]>([0, 100]);
+  const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
-      return user.credibilityScore >= credibilityFilter[0] && user.credibilityScore <= credibilityFilter[1];
+      const credibilityMatch = user.credibilityScore >= credibilityFilter[0] && user.credibilityScore <= credibilityFilter[1];
+      const statusMatch = statusFilter === "all" || user.status === statusFilter;
+      const roleMatch = roleFilter === "all" || user.role === roleFilter;
+      return credibilityMatch && statusMatch && roleMatch;
     });
-  }, [users, credibilityFilter]);
+  }, [users, credibilityFilter, statusFilter, roleFilter]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -78,6 +85,9 @@ export default function AdminPage() {
     if (score > 40) return "bg-yellow-500";
     return "bg-red-500";
   }
+  
+  const userRoles: UserRole[] = ["admin", "rc_staff", "police", "reporter", "finder"];
+  const userStatuses: UserStatus[] = ["active", "suspended", "archived"];
 
   return (
     <Card>
@@ -103,6 +113,36 @@ export default function AdminPage() {
                             <p className="text-sm text-muted-foreground">
                                 Adjust the filters to refine your search.
                             </p>
+                        </div>
+                        <div className="grid gap-2">
+                             <Label>Status</Label>
+                             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as UserStatus | "all")}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    {userStatuses.map(status => (
+                                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="grid gap-2">
+                             <Label>Role</Label>
+                              <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as UserRole | "all")}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Roles</SelectItem>
+                                    {userRoles.map(role => (
+                                        <SelectItem key={role} value={role} className="capitalize">
+                                            {role.replace('_', ' ')}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="grid gap-2">
                             <Label>Credibility Score</Label>
