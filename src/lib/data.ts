@@ -1,4 +1,5 @@
-import type { DocumentReport, User, Feedback, Enquiry, ActivityLog } from "@/lib/types";
+
+import type { DocumentReport, User, Feedback, Enquiry, ActivityLog, Notification } from "@/lib/types";
 
 export const users: User[] = [
   { id: 'user-1', name: 'Admin User', email: 'admin@docufind.com', role: 'admin', avatarUrl: 'https://picsum.photos/seed/1/40/40', status: 'active', credibilityScore: 95, phoneNumber: '111-222-3333' },
@@ -125,4 +126,43 @@ export const activityLogs: ActivityLog[] = [
     { id: 'log-004', userId: 'user-1', activity: 'User Login', timestamp: '2024-07-29 09:00:00', ipAddress: '10.0.0.1' },
     { id: 'log-005', userId: 'user-1', activity: 'Changed User Status', timestamp: '2024-07-29 09:05:00', details: 'User ID: user-3, Status: suspended', ipAddress: '10.0.0.1' },
     { id: 'log-006', userId: 'user-3', activity: 'Login Failed', timestamp: '2024-07-29 09:30:00', details: 'Reason: Account suspended', ipAddress: '203.0.113.5' },
+];
+
+
+export const notifications: Notification[] = [
+    {
+        id: 'notif-001',
+        userId: 'user-1',
+        title: 'New Feedback Submitted',
+        description: 'A user submitted new feedback with the subject "Great platform!"',
+        timestamp: '2024-07-28 14:00:00',
+        isRead: false,
+        link: '/admin/feedback'
+    },
+    {
+        id: 'notif-002',
+        userId: 'user-1',
+        title: 'Account Suspension',
+        description: 'You have suspended the account for user Police Officer.',
+        timestamp: '2024-07-29 09:05:00',
+        isRead: false,
+        link: '/admin/users/user-3'
+    },
+     {
+        id: 'notif-003',
+        userId: 'user-1',
+        title: 'Claim Escalated',
+        description: 'A claim for document doc-002 has been escalated for your review.',
+        timestamp: '2024-07-30 11:00:00',
+        isRead: true,
+        link: '/police/dashboard'
+    },
+    {
+        id: 'notif-004',
+        userId: 'user-4',
+        title: 'Welcome to DocuFind!',
+        description: 'Thank you for creating an account. Get started by reporting or searching for a document.',
+        timestamp: '2024-07-28 10:00:00',
+        isRead: true
+    }
 ];

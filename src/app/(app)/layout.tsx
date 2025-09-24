@@ -1,3 +1,4 @@
+
 import { getAuthenticatedUser } from "@/lib/auth";
 import { MainNav } from "@/components/layout/main-nav";
 import { UserNav } from "@/components/auth/user-nav";
@@ -12,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { NotificationsPopover } from "@/components/layout/notifications-popover";
 
 export default async function AppLayout({
   children,
@@ -75,6 +77,7 @@ export default async function AppLayout({
               </div>
             </form>
           </div>
+          <NotificationsPopover user={user} />
           <ThemeToggle />
           <UserNav user={user} />
         </header>

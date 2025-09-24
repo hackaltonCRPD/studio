@@ -1,3 +1,4 @@
+
 export type UserRole = "reporter" | "finder" | "rc_staff" | "police" | "admin";
 
 export type UserStatus = "active" | "suspended" | "archived";
@@ -50,4 +51,14 @@ export type ActivityLog = {
     timestamp: string;
     details?: string;
     ipAddress: string;
+};
+
+export type Notification = {
+    id: string;
+    userId: string;
+    title: string;
+    description: string;
+    timestamp: string;
+    isRead: boolean;
+    link?: string;
 };
