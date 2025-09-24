@@ -29,7 +29,9 @@ export function NotificationsPopover({ user }: { user: User }) {
   
   const unreadCount = useMemo(() => userNotifications.filter(n => !n.isRead).length, [userNotifications]);
 
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
@@ -50,6 +52,36 @@ export function NotificationsPopover({ user }: { user: User }) {
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  const NotificationContent = ({ notification }: { notification: Notification }) => (
+    <div 
+        className={cn(
+        "p-4 hover:bg-muted/50",
+        !notification.isRead && "bg-blue-500/10"
+        )}
+    >
+        <div className="flex items-start gap-3">
+            {!notification.isRead && <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>}
+            <div className={cn("flex-1", notification.isRead && "pl-5")}>
+                <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">{notification.title}</h4>
+                     <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6"
+                        onClick={(e) => handleMarkAsRead(e, notification.id)}
+                        aria-label="Mark as read"
+                        title="Mark as read"
+                    >
+                        <Check className="h-4 w-4" />
+                    </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">{notification.description}</p>
+                <p className="text-xs text-muted-foreground mt-1">{new Date(notification.timestamp).toLocaleString()}</p>
+            </div>
+        </div>
+    </div>
+  )
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -79,38 +111,13 @@ export function NotificationsPopover({ user }: { user: User }) {
                     <div className="max-h-80 overflow-y-auto">
                         {userNotifications.map((notification, index) => (
                            <div key={notification.id}>
-                             <div 
-                                className={cn(
-                                "p-4 hover:bg-muted/50",
-                                !notification.isRead && "bg-blue-500/10"
-                                )}
-                            >
-                                <div className="flex items-start gap-3">
-                                    {!notification.isRead && <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>}
-                                    <div className={cn("flex-1", notification.isRead && "pl-5")}>
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="font-semibold">{notification.title}</h4>
-                                             <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-6 w-6"
-                                                onClick={() => handleMarkAsRead(notification.id)}
-                                                aria-label="Mark as read"
-                                                title="Mark as read"
-                                            >
-                                                <Check className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{notification.description}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">{new Date(notification.timestamp).toLocaleString()}</p>
-                                        {notification.link &&
-                                            <Button variant="link" size="sm" asChild className="p-0 h-auto mt-1">
-                                                <Link href={notification.link}>View Details</Link>
-                                            </Button>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
+                             {notification.link ? (
+                                <Link href={notification.link}>
+                                   <NotificationContent notification={notification} />
+                                </Link>
+                             ) : (
+                                <NotificationContent notification={notification} />
+                             )}
                             {index < userNotifications.length - 1 && <Separator />}
                            </div>
                         ))}
