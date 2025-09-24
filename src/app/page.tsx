@@ -41,12 +41,12 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button size="lg" asChild>
-                    <Link href="/documents/report">
+                    <Link href="/login">
                       Report a Lost Item
                     </Link>
                   </Button>
                    <Button size="lg" variant="outline" asChild>
-                     <Link href="/documents/search">
+                     <Link href="/login">
                       Search for a Found Item
                     </Link>
                   </Button>
