@@ -10,6 +10,7 @@ export type User = {
   role: UserRole;
   status: UserStatus;
   credibilityScore: number;
+  phoneNumber?: string;
 };
 
 export type DocumentReport = {

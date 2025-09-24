@@ -79,6 +79,7 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                     <div className="flex-1">
                         <CardTitle className="text-3xl">{user.name}</CardTitle>
                         <CardDescription>{user.email}</CardDescription>
+                         {user.phoneNumber && <CardDescription>{user.phoneNumber}</CardDescription>}
                     </div>
                 </CardHeader>
                 <CardContent>

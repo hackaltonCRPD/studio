@@ -40,6 +40,7 @@ import { useEffect, useState } from "react";
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
+  phoneNumber: z.string().optional(),
   role: z.enum(["reporter", "finder", "rc_staff", "police", "admin"]),
 });
 
@@ -62,6 +63,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         defaultValues: {
             name: user.name,
             email: user.email,
+            phoneNumber: user.phoneNumber || "",
             role: user.role,
         },
     });
@@ -111,6 +113,19 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
                                         <Input type="email" placeholder="name@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                        <Input type="tel" placeholder="123-456-7890" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

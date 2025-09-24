@@ -1,11 +1,11 @@
 import type { DocumentReport, User, Feedback, Enquiry, ActivityLog } from "@/lib/types";
 
 export const users: User[] = [
-  { id: 'user-1', name: 'Admin User', email: 'admin@docufind.com', role: 'admin', avatarUrl: 'https://picsum.photos/seed/1/40/40', status: 'active', credibilityScore: 95 },
-  { id: 'user-2', name: 'RC Staff Member', email: 'staff@docufind.com', role: 'rc_staff', avatarUrl: 'https://picsum.photos/seed/2/40/40', status: 'active', credibilityScore: 92 },
-  { id: 'user-3', name: 'Police Officer', email: 'police@docufind.com', role: 'police', avatarUrl: 'https://picsum.photos/seed/3/40/40', status: 'suspended', credibilityScore: 75 },
-  { id: 'user-4', name: 'John Doe', email: 'john.d@email.com', role: 'reporter', avatarUrl: 'https://picsum.photos/seed/4/40/40', status: 'active', credibilityScore: 88 },
-  { id: 'user-5', name: 'Jane Smith', email: 'jane.s@email.com', role: 'finder', avatarUrl: 'https://picsum.photos/seed/5/40/40', status: 'archived', credibilityScore: 40 },
+  { id: 'user-1', name: 'Admin User', email: 'admin@docufind.com', role: 'admin', avatarUrl: 'https://picsum.photos/seed/1/40/40', status: 'active', credibilityScore: 95, phoneNumber: '111-222-3333' },
+  { id: 'user-2', name: 'RC Staff Member', email: 'staff@docufind.com', role: 'rc_staff', avatarUrl: 'https://picsum.photos/seed/2/40/40', status: 'active', credibilityScore: 92, phoneNumber: '222-333-4444' },
+  { id: 'user-3', name: 'Police Officer', email: 'police@docufind.com', role: 'police', avatarUrl: 'https://picsum.photos/seed/3/40/40', status: 'suspended', credibilityScore: 75, phoneNumber: '911-911-9111' },
+  { id: 'user-4', name: 'John Doe', email: 'john.d@email.com', role: 'reporter', avatarUrl: 'https://picsum.photos/seed/4/40/40', status: 'active', credibilityScore: 88, phoneNumber: '444-555-6666' },
+  { id: 'user-5', name: 'Jane Smith', email: 'jane.s@email.com', role: 'finder', avatarUrl: 'https://picsum.photos/seed/5/40/40', status: 'archived', credibilityScore: 40, phoneNumber: '555-666-7777' },
 ];
 
 export const documents: DocumentReport[] = [

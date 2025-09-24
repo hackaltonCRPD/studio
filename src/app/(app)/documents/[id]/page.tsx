@@ -15,7 +15,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { MOCK_USER } from "@/lib/auth"; // Using mock for simplicity
 
@@ -31,6 +31,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
 
   const reportedByUser = users.find(u => u.id === document.reportedBy);
   const isAdmin = currentUser.role === 'admin';
+  const isPolice = currentUser.role === 'police';
   const canEdit = isAdmin || currentUser.id === document.reportedBy;
 
   const getStatusVariant = (status: "lost" | "found" | "claimed") => {
@@ -44,6 +45,13 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
       default:
         return 'outline';
     }
+  }
+
+  const canViewPhoneNumber = () => {
+    if (!reportedByUser) return false;
+    if (reportedByUser.role === 'police') return true;
+    if (isAdmin || isPolice) return true;
+    return false;
   }
 
   return (
@@ -111,6 +119,15 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                                 <p>{document.dateLost}</p>
                             </div>
                         </div>
+                         {canViewPhoneNumber() && reportedByUser?.phoneNumber && (
+                            <div className="flex items-start gap-2">
+                                <Phone className="h-5 w-5 text-muted-foreground mt-1" />
+                                <div>
+                                    <h3 className="text-sm font-medium text-muted-foreground">Contact Phone</h3>
+                                    <p>{reportedByUser.phoneNumber}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                      {isAdmin && reportedByUser && (
                         <>
