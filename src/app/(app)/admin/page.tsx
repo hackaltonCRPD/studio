@@ -25,18 +25,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, SlidersHorizontal } from "lucide-react";
 import { users as initialUsers } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { User, UserStatus } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const { toast } = useToast();
+  const [credibilityFilter, setCredibilityFilter] = useState<[number, number]>([0, 100]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      return user.credibilityScore >= credibilityFilter[0] && user.credibilityScore <= credibilityFilter[1];
+    });
+  }, [users, credibilityFilter]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -72,10 +82,46 @@ export default function AdminPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>User Management</CardTitle>
-        <CardDescription>
-          View and manage all users in the system.
-        </CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                View and manage all users in the system.
+                </CardDescription>
+            </div>
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="ml-auto gap-1.5 text-sm">
+                        <SlidersHorizontal className="h-4 w-4" />
+                        Filter
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Filters</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Adjust the filters to refine your search.
+                            </p>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Credibility Score</Label>
+                             <div className="flex items-center gap-4">
+                                <span>{credibilityFilter[0]}%</span>
+                                <Slider
+                                    defaultValue={[0, 100]}
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    onValueChange={(value) => setCredibilityFilter(value as [number, number])}
+                                />
+                                <span>{credibilityFilter[1]}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -92,7 +138,7 @@ export default function AdminPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id} className={user.status === 'archived' ? 'opacity-50' : ''}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">

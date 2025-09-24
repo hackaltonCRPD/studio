@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Card,
   CardContent,
@@ -23,11 +25,45 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, File } from "lucide-react";
-import { documents } from "@/lib/data";
+import { documents as initialDocuments } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { DocumentReport } from "@/lib/types";
 
 export default function SearchDocumentsPage() {
+  const [filters, setFilters] = useState({
+    documentType: "all",
+    location: "",
+    status: "all",
+  });
+
+  const filteredDocuments = useMemo(() => {
+    return initialDocuments.filter((doc: DocumentReport) => {
+      const typeMatch = filters.documentType === "all" || doc.documentType.toLowerCase().replace("'", "") === filters.documentType;
+      const locationMatch = doc.location.toLowerCase().includes(filters.location.toLowerCase());
+      const statusMatch = filters.status === "all" || doc.status === filters.status;
+      return typeMatch && locationMatch && statusMatch;
+    });
+  }, [filters]);
+
+  const handleFilterChange = (filterName: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterName]: value }));
+  };
+
+  const documentTypes = useMemo(() => {
+    const types = new Set(initialDocuments.map(doc => doc.documentType));
+    return Array.from(types);
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -37,6 +73,36 @@ export default function SearchDocumentsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <Select value={filters.documentType} onValueChange={(value) => handleFilterChange("documentType", value)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Document Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {documentTypes.map(type => (
+                 <SelectItem key={type} value={type.toLowerCase().replace("'", "")}>{type}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Filter by location..."
+            value={filters.location}
+            onChange={(e) => handleFilterChange("location", e.target.value)}
+            className="w-full sm:max-w-sm"
+          />
+          <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="lost">Lost</SelectItem>
+              <SelectItem value="found">Found</SelectItem>
+              <SelectItem value="claimed">Claimed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -53,7 +119,7 @@ export default function SearchDocumentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {documents.map((doc) => (
+            {filteredDocuments.map((doc) => (
               <TableRow key={doc.id}>
                 <TableCell className="hidden sm:table-cell">
                   {doc.imageUrl ? (
