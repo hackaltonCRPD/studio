@@ -15,7 +15,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, User, File as FileIcon } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
@@ -52,6 +52,14 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                 {document.documentType}
             </h1>
             <Badge variant={getStatusVariant(document.status)} className="ml-auto sm:ml-0 capitalize">{document.status}</Badge>
+             <div className="hidden items-center gap-2 md:ml-auto md:flex">
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={`/documents/${document.id}/edit`}>
+                        <Edit className="h-4 w-4" />
+                        Edit
+                    </Link>
+                </Button>
+            </div>
         </div>
         <Card>
             <CardHeader>
