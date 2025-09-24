@@ -15,18 +15,23 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { MOCK_USER } from "@/lib/auth"; // Using mock for simplicity
 
 export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
   const document = documents.find(d => d.id === params.id);
   const router = useRouter();
+  // In a real app, you would fetch the current user from your auth system
+  const currentUser = MOCK_USER; 
 
   if (!document) {
     notFound();
   }
 
   const reportedByUser = users.find(u => u.id === document.reportedBy);
+  const isAdmin = currentUser.role === 'admin';
+  const canEdit = isAdmin || currentUser.id === document.reportedBy;
 
   const getStatusVariant = (status: "lost" | "found" | "claimed") => {
     switch (status) {
@@ -52,14 +57,16 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                 {document.documentType}
             </h1>
             <Badge variant={getStatusVariant(document.status)} className="ml-auto sm:ml-0 capitalize">{document.status}</Badge>
-             <div className="hidden items-center gap-2 md:ml-auto md:flex">
-                <Button variant="outline" size="sm" asChild>
-                    <Link href={`/documents/${document.id}/edit`}>
-                        <Edit className="h-4 w-4" />
-                        Edit
-                    </Link>
-                </Button>
-            </div>
+             {canEdit && (
+                <div className="hidden items-center gap-2 md:ml-auto md:flex">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/documents/${document.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                            Edit
+                        </Link>
+                    </Button>
+                </div>
+            )}
         </div>
         <Card>
             <CardHeader>
@@ -105,6 +112,21 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                             </div>
                         </div>
                     </div>
+                     {isAdmin && reportedByUser && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h3 className="text-sm font-medium text-muted-foreground">Admin Information</h3>
+                                <div className="flex items-start gap-2 mt-2">
+                                     <ShieldCheck className="h-5 w-5 text-muted-foreground mt-1" />
+                                     <div>
+                                        <h4 className="text-sm font-medium text-muted-foreground">Reporter Credibility</h4>
+                                        <p>{reportedByUser.credibilityScore}%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </CardContent>
             <CardFooter className="border-t pt-6">
