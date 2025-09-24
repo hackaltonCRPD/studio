@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -65,16 +66,18 @@ export function NotificationsPopover({ user }: { user: User }) {
             <div className={cn("flex-1", notification.isRead && "pl-5")}>
                 <div className="flex items-center justify-between">
                     <h4 className="font-semibold text-sm">{notification.title}</h4>
-                     <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6"
-                        onClick={(e) => handleMarkAsRead(e, notification.id)}
-                        aria-label="Mark as read"
-                        title="Mark as read"
-                    >
-                        <Check className="h-4 w-4" />
-                    </Button>
+                     {!notification.isRead && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={(e) => handleMarkAsRead(e, notification.id)}
+                            aria-label="Mark as read"
+                            title="Mark as read"
+                        >
+                            <Check className="h-4 w-4" />
+                        </Button>
+                     )}
                 </div>
                 <p className="text-sm text-muted-foreground">{notification.description}</p>
                 <p className="text-xs text-muted-foreground mt-1">{new Date(notification.timestamp).toLocaleString()}</p>
@@ -109,16 +112,12 @@ export function NotificationsPopover({ user }: { user: User }) {
             <CardContent className="p-0">
                 {userNotifications.length > 0 ? (
                     <div className="max-h-80 overflow-y-auto">
-                        {userNotifications.map((notification, index) => (
+                        {userNotifications.slice(0, 5).map((notification, index) => (
                            <div key={notification.id}>
-                             {notification.link ? (
-                                <Link href={notification.link}>
-                                   <NotificationContent notification={notification} />
-                                </Link>
-                             ) : (
+                             <Link href={notification.link || `/notifications/${notification.id}`}>
                                 <NotificationContent notification={notification} />
-                             )}
-                            {index < userNotifications.length - 1 && <Separator />}
+                             </Link>
+                            {index < userNotifications.slice(0, 5).length - 1 && <Separator />}
                            </div>
                         ))}
                     </div>
@@ -130,7 +129,9 @@ export function NotificationsPopover({ user }: { user: User }) {
             </CardContent>
             {userNotifications.length > 0 &&
                 <CardFooter className="py-3 px-4 border-t justify-center">
-                     <Button variant="ghost" size="sm">View all notifications</Button>
+                     <Button variant="ghost" size="sm" asChild>
+                        <Link href="/notifications">View all notifications</Link>
+                    </Button>
                 </CardFooter>
             }
         </Card>
