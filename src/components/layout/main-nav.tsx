@@ -11,6 +11,7 @@ import {
   BrainCircuit,
   MessageSquare,
   HelpCircle,
+  BookUser,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ const navItems: NavItem[] = [
         { href: "/admin/enquiries", label: "Enquiries", icon: HelpCircle, allowedRoles: ["admin"]},
     ]
   },
+  { href: "/guide", label: "User Guide", icon: BookUser, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
   { href: "/feedback", label: "Feedback", icon: MessageSquare, allowedRoles: ["reporter", "finder", "rc_staff", "police"] },
   { href: "/enquiry", label: "Enquiry", icon: HelpCircle, allowedRoles: ["reporter", "finder", "rc_staff", "police"] },
 ];
