@@ -114,9 +114,11 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2 border-t pt-6">
-                    <Button size="sm" variant="outline">
-                        <FileText className="h-4 w-4" />
-                        View Activity Log
+                    <Button size="sm" variant="outline" asChild>
+                        <Link href={`/admin/users/${user.id}/activity`}>
+                            <FileText className="h-4 w-4" />
+                            View Activity Log
+                        </Link>
                     </Button>
                 </CardFooter>
             </Card>

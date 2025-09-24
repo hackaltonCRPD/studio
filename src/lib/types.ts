@@ -41,3 +41,12 @@ export type Enquiry = {
   date: string;
   status: "open" | "resolved";
 };
+
+export type ActivityLog = {
+    id: string;
+    userId: string;
+    activity: string;
+    timestamp: string;
+    details?: string;
+    ipAddress: string;
+};

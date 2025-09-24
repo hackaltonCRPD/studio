@@ -1,4 +1,4 @@
-import type { DocumentReport, User, Feedback, Enquiry } from "@/lib/types";
+import type { DocumentReport, User, Feedback, Enquiry, ActivityLog } from "@/lib/types";
 
 export const users: User[] = [
   { id: 'user-1', name: 'Admin User', email: 'admin@docufind.com', role: 'admin', avatarUrl: 'https://picsum.photos/seed/1/40/40', status: 'active', credibilityScore: 95 },
@@ -116,4 +116,13 @@ export const enquiries: Enquiry[] = [
         date: '2024-07-26',
         status: 'resolved'
     }
+];
+
+export const activityLogs: ActivityLog[] = [
+    { id: 'log-001', userId: 'user-4', activity: 'User Login', timestamp: '2024-07-29 10:00:00', ipAddress: '192.168.1.1' },
+    { id: 'log-002', userId: 'user-4', activity: 'Reported Document', timestamp: '2024-07-29 10:05:00', details: 'Document ID: doc-001', ipAddress: '192.168.1.1' },
+    { id: 'log-003', userId: 'user-4', activity: 'Submitted Enquiry', timestamp: '2024-07-29 10:15:00', details: 'Enquiry ID: enq-001', ipAddress: '192.168.1.1' },
+    { id: 'log-004', userId: 'user-1', activity: 'User Login', timestamp: '2024-07-29 09:00:00', ipAddress: '10.0.0.1' },
+    { id: 'log-005', userId: 'user-1', activity: 'Changed User Status', timestamp: '2024-07-29 09:05:00', details: 'User ID: user-3, Status: suspended', ipAddress: '10.0.0.1' },
+    { id: 'log-006', userId: 'user-3', activity: 'Login Failed', timestamp: '2024-07-29 09:30:00', details: 'Reason: Account suspended', ipAddress: '203.0.113.5' },
 ];
