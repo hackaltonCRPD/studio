@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -8,6 +9,8 @@ import {
   FilePlus,
   Users,
   BrainCircuit,
+  MessageSquare,
+  HelpCircle,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -28,6 +31,8 @@ const navItems: NavItem[] = [
   { href: "/documents/search", label: "Search Documents", icon: FileSearch, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
   { href: "/match-finder", label: "Match Finder", icon: BrainCircuit, allowedRoles: ["admin", "rc_staff"] },
   { href: "/admin", label: "Admin", icon: Users, allowedRoles: ["admin"] },
+  { href: "/feedback", label: "Feedback", icon: MessageSquare, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
+  { href: "/enquiry", label: "Enquiry", icon: HelpCircle, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
 ];
 
 export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<HTMLElement> & { userRole: UserRole }) {
