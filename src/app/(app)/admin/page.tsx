@@ -32,6 +32,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { User, UserStatus } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -62,6 +63,12 @@ export default function AdminPage() {
     }
   }
 
+  const getFraudBarColor = (score: number) => {
+    if (score > 75) return "bg-green-500";
+    if (score > 40) return "bg-yellow-500";
+    return "bg-red-500";
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -78,6 +85,7 @@ export default function AdminPage() {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead className="w-[250px]">Credibility / Fraud Risk</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -102,6 +110,12 @@ export default function AdminPage() {
                   <Badge variant={getStatusVariant(user.status)} className="capitalize">{user.status}</Badge>
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{user.credibilityScore}%</span>
+                    <Progress value={100 - user.credibilityScore} className="h-2 w-24" indicatorClassName={getFraudBarColor(user.credibilityScore)} />
+                  </div>
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

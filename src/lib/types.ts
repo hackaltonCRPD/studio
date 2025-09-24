@@ -9,6 +9,7 @@ export type User = {
   avatarUrl: string;
   role: UserRole;
   status: UserStatus;
+  credibilityScore: number;
 };
 
 export type DocumentReport = {
