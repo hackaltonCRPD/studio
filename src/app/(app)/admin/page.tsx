@@ -30,7 +30,7 @@ import { MoreHorizontal, SlidersHorizontal, Eye, Edit, Trash2 } from "lucide-rea
 import { users as initialUsers } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { User, UserStatus, UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -38,14 +38,23 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSearchParams } from "next/navigation";
 
 
 export default function AdminPage() {
+  const searchParams = useSearchParams();
   const [users, setUsers] = useState<User[]>(initialUsers);
   const { toast } = useToast();
   const [credibilityFilter, setCredibilityFilter] = useState<[number, number]>([0, 100]);
-  const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<UserStatus | "all">(searchParams.get('status') as UserStatus | 'all' || "all");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+
+  useEffect(() => {
+    const status = searchParams.get('status') as UserStatus | 'all';
+    if (status) {
+      setStatusFilter(status);
+    }
+  }, [searchParams]);
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => {

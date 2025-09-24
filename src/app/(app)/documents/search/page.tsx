@@ -29,7 +29,7 @@ import { MoreHorizontal, File, Eye } from "lucide-react";
 import { documents as initialDocuments } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,13 +39,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { DocumentReport } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
 
 export default function SearchDocumentsPage() {
+    const searchParams = useSearchParams();
+    const initialStatus = searchParams.get('status') || 'all';
+
   const [filters, setFilters] = useState({
     documentType: "all",
     location: "",
-    status: "all",
+    status: initialStatus,
   });
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status) {
+        handleFilterChange('status', status);
+    }
+  }, [searchParams]);
 
   const filteredDocuments = useMemo(() => {
     return initialDocuments.filter((doc: DocumentReport) => {
