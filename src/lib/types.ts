@@ -23,3 +23,21 @@ export type DocumentReport = {
   imageUrl?: string;
   reportDate: string;
 };
+
+export type Feedback = {
+  id: string;
+  subject: string;
+  message: string;
+  userId: string;
+  date: string;
+  status: "open" | "resolved";
+};
+
+export type Enquiry = {
+  id: string;
+  subject: string;
+  question: string;
+  userId: string;
+  date: string;
+  status: "open" | "resolved";
+};

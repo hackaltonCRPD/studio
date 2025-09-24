@@ -1,4 +1,4 @@
-import type { DocumentReport, User } from "@/lib/types";
+import type { DocumentReport, User, Feedback, Enquiry } from "@/lib/types";
 
 export const users: User[] = [
   { id: 'user-1', name: 'Admin User', email: 'admin@docufind.com', role: 'admin', avatarUrl: 'https://picsum.photos/seed/1/40/40', status: 'active', credibilityScore: 95 },
@@ -61,5 +61,59 @@ export const documents: DocumentReport[] = [
         status: 'claimed',
         reportedBy: 'user-4',
         reportDate: '2024-07-25'
+    }
+];
+
+export const feedback: Feedback[] = [
+    {
+        id: 'fb-001',
+        subject: 'Great platform!',
+        message: 'This is a really helpful service. Found my lost ID in just two days. The interface is clean and easy to use. Keep up the great work!',
+        userId: 'user-4',
+        date: '2024-07-28',
+        status: 'open'
+    },
+    {
+        id: 'fb-002',
+        subject: 'Suggestion for search filters',
+        message: 'It would be great if we could filter search results by a date range instead of just a single date. Would make it easier to narrow down.',
+        userId: 'user-5',
+        date: '2024-07-27',
+        status: 'open'
+    },
+    {
+        id: 'fb-003',
+        subject: 'Mobile App?',
+        message: 'Love the website. Are there any plans to release a mobile app for iOS and Android? That would be super convenient.',
+        userId: 'user-2',
+        date: '2024-07-25',
+        status: 'resolved'
+    }
+];
+
+export const enquiries: Enquiry[] = [
+    {
+        id: 'enq-001',
+        subject: 'How do I claim a document?',
+        question: 'I think I found my lost wallet on the site. What is the process for claiming it and verifying my identity?',
+        userId: 'user-4',
+        date: '2024-07-29',
+        status: 'open'
+    },
+    {
+        id: 'enq-002',
+        subject: 'Problem with uploading a photo',
+        question: 'I\'m trying to submit a found document report, but the photo upload keeps failing. It\'s a standard JPG file under 1MB. Can you help?',
+        userId: 'user-5',
+        date: '2024-07-28',
+        status: 'open'
+    },
+     {
+        id: 'enq-003',
+        subject: 'Account suspension',
+        question: 'My account was suspended, but I\'m not sure why. Can you provide more information on why this action was taken?',
+        userId: 'user-3',
+        date: '2024-07-26',
+        status: 'resolved'
     }
 ];
