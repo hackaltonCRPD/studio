@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -39,6 +40,7 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon, Upload } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
+import { MOCK_USER } from "@/lib/auth"
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -47,6 +49,7 @@ const formSchema = z.object({
   dateLost: z.date({
     required_error: "A date is required.",
   }),
+  status: z.enum(["lost", "found"]),
   file: z.any().optional(),
 })
 
@@ -58,29 +61,75 @@ export default function ReportDocumentPage() {
       documentType: "",
       description: "",
       location: "",
+      status: "lost",
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    toast({
-      title: "Report Submitted",
-      description: "Your lost document report has been successfully submitted.",
-    })
-    form.reset()
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+        const response = await fetch(`http://localhost:5000/api/documents`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...values,
+                reportedBy: MOCK_USER.id, // In a real app, get the current user's ID
+                reportDate: new Date().toISOString().split('T')[0]
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit report');
+        }
+
+        toast({
+            title: "Report Submitted",
+            description: "Your document report has been successfully submitted.",
+        });
+        form.reset();
+
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Submission Failed",
+            description: "There was an error submitting your report. Please try again.",
+        });
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Report a Lost Document</CardTitle>
+        <CardTitle>Report a Document</CardTitle>
         <CardDescription>
-          Fill out the form below to report a document you have lost.
+          Fill out the form below to report a document you have lost or found.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Are you reporting a lost or a found item?</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select one" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="lost">I lost a document</SelectItem>
+                      <SelectItem value="found">I found a document</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="documentType"
@@ -111,7 +160,7 @@ export default function ReportDocumentPage() {
               name="dateLost"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date Lost</FormLabel>
+                  <FormLabel>Date Lost / Found</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -152,7 +201,7 @@ export default function ReportDocumentPage() {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Known Location</FormLabel>
+                  <FormLabel>Location Lost / Found</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Grand Central Station" {...field} />
                   </FormControl>
@@ -196,7 +245,7 @@ export default function ReportDocumentPage() {
                     </div> 
                   </FormControl>
                   <FormDescription>
-                    Upload a photo or scan of the document if you have one.
+                    If you found a document, uploading a picture is highly recommended.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
