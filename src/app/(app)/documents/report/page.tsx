@@ -143,12 +143,12 @@ export default function ReportDocumentPage() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="passport">Passport</SelectItem>
-                      <SelectItem value="drivers_license">Driver's License</SelectItem>
-                      <SelectItem value="national_id">National ID</SelectItem>
-                      <SelectItem value="student_id">Student ID</SelectItem>
-                       <SelectItem value="credit_card">Credit Card</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="Passport">Passport</SelectItem>
+                      <SelectItem value="Driver's License">Driver's License</SelectItem>
+                      <SelectItem value="National ID">National ID</SelectItem>
+                      <SelectItem value="Student ID">Student ID</SelectItem>
+                      <SelectItem value="Credit Card">Credit Card</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
