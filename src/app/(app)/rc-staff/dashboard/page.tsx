@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -16,20 +17,47 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Hand, PackagePlus, Truck, X } from "lucide-react";
-import { documents } from "@/lib/data";
+import { getDocuments } from "@/lib/data";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import type { DocumentReport } from "@/lib/types";
 
-
-// Mock data for claims - in a real app this would come from an API
-const pendingClaims = documents.filter(d => d.status === 'found').slice(0, 2).map(d => ({...d, claimantName: 'John Doe'}));
-const recentHandovers = documents.filter(d => d.status === 'claimed').slice(0, 3);
-
+type Claim = DocumentReport & { claimantName: string };
 
 export default function RCStaffDashboardPage() {
-  const foundItems = documents.filter(d => d.status === 'found');
+  const [foundItems, setFoundItems] = useState<DocumentReport[]>([]);
+  const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);
+  const [recentHandovers, setRecentHandovers] = useState<DocumentReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+        setIsLoading(true);
+        // In a real app, you'd have specific endpoints for these
+        const [allDocs, found, claimed] = await Promise.all([
+            getDocuments(),
+            getDocuments({status: 'found'}),
+            getDocuments({status: 'claimed'})
+        ]);
+        
+        // Mocking claims and handovers
+        setFoundItems(found);
+        setPendingClaims(found.slice(0,2).map(d => ({ ...d, claimantName: 'John Doe' })));
+        setRecentHandovers(claimed.slice(0,3));
+
+        setIsLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  const handleClaimAction = async (documentId: string, action: 'approve' | 'reject' | 'escalate') => {
+      console.log(`Action: ${action} on document ${documentId}`);
+      // Optimistically remove from list
+      setPendingClaims(pendingClaims.filter(c => c.id !== documentId));
+  }
+
 
   return (
     <div className="space-y-6">
@@ -48,10 +76,10 @@ export default function RCStaffDashboardPage() {
                             <PackagePlus className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{foundItems.length}</div>
+                            <div className="text-2xl font-bold">{isLoading ? '...' : foundItems.length}</div>
                             <p className="text-xs text-muted-foreground">items waiting for claim</p>
                             <Button size="sm" className="mt-2" asChild>
-                                <Link href="/documents/report">Log New Found Item</Link>
+                                <Link href="/documents/report?status=found">Log New Found Item</Link>
                             </Button>
                         </CardContent>
                     </Card>
@@ -61,7 +89,7 @@ export default function RCStaffDashboardPage() {
                             <Hand className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{pendingClaims.length}</div>
+                            <div className="text-2xl font-bold">{isLoading ? '...' : pendingClaims.length}</div>
                             <p className="text-xs text-muted-foreground">claims to review</p>
                         </CardContent>
                     </Card>
@@ -97,27 +125,33 @@ export default function RCStaffDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-                {pendingClaims.map(item => (
-                     <TableRow key={item.id}>
-                        <TableCell>
-                            <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
-                        </TableCell>
-                        <TableCell className="font-medium">{item.documentType}</TableCell>
-                        <TableCell>{item.claimantName}</TableCell>
-                        <TableCell>{new Date().toLocaleDateString()}</TableCell>
-                        <TableCell className="flex gap-2">
-                           <Button size="sm">
-                                <Check className="mr-2 h-4 w-4" />
-                                Approve
-                            </Button>
-                            <Button size="sm" variant="destructive">
-                                <X className="mr-2 h-4 w-4" />
-                                Reject
-                            </Button>
-                            <Button size="sm" variant="outline">Escalate</Button>
-                        </TableCell>
-                    </TableRow>
-                ))}
+                {isLoading ? (
+                    <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading claims...</TableCell></TableRow>
+                ) : pendingClaims.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending claims.</TableCell></TableRow>
+                ) : (
+                    pendingClaims.map(item => (
+                        <TableRow key={item.id}>
+                            <TableCell>
+                                <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
+                            </TableCell>
+                            <TableCell className="font-medium">{item.documentType}</TableCell>
+                            <TableCell>{item.claimantName}</TableCell>
+                            <TableCell>{new Date().toLocaleDateString()}</TableCell>
+                            <TableCell className="flex gap-2">
+                            <Button size="sm" onClick={() => handleClaimAction(item.id, 'approve')}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Approve
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleClaimAction(item.id, 'reject')}>
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reject
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleClaimAction(item.id, 'escalate')}>Escalate</Button>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                )}
             </TableBody>
           </Table>
         </CardContent>
@@ -139,16 +173,22 @@ export default function RCStaffDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {recentHandovers.map(item => (
-                            <TableRow key={item.id}>
-                                <TableCell>
-                                    <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
-                                </TableCell>
-                                <TableCell className="font-medium">{item.documentType}</TableCell>
-                                <TableCell>Jane Doe</TableCell>
-                                <TableCell>{item.reportDate}</TableCell>
-                            </TableRow>
-                        ))}
+                         {isLoading ? (
+                            <TableRow><TableCell colSpan={4} className="h-24 text-center">Loading handovers...</TableCell></TableRow>
+                         ) : recentHandovers.length === 0 ? (
+                            <TableRow><TableCell colSpan={4} className="h-24 text-center">No recent handovers.</TableCell></TableRow>
+                         ) : (
+                            recentHandovers.map(item => (
+                                <TableRow key={item.id}>
+                                    <TableCell>
+                                        <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
+                                    </TableCell>
+                                    <TableCell className="font-medium">{item.documentType}</TableCell>
+                                    <TableCell>Jane Doe</TableCell>
+                                    <TableCell>{new Date(item.reportDate).toLocaleDateString()}</TableCell>
+                                </TableRow>
+                            ))
+                         )}
                     </TableBody>
                  </Table>
              </CardContent>

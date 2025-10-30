@@ -23,15 +23,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { documents, users } from "@/lib/data";
+import { getDocuments, getUsers } from "@/lib/data";
 import { getAuthenticatedUser } from "@/lib/auth";
+import type { DocumentReport } from "@/lib/types";
 
 export default async function Dashboard() {
-  const recentReports = documents.slice(0, 5);
   const user = await getAuthenticatedUser();
+  const [documents, users] = await Promise.all([
+      getDocuments(),
+      user.role === 'admin' ? getUsers() : Promise.resolve([])
+  ]);
+
+  const recentReports = documents.slice(0, 5);
   const isAdmin = user.role === 'admin';
 
   if (isAdmin) {
+    const activeUsers = users.filter(u => u.status === 'active').length;
+    const avgCredibility = users.length > 0 
+        ? Math.round(users.reduce((acc, u) => acc + u.credibilityScore, 0) / users.length) 
+        : 0;
+
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -54,8 +65,8 @@ export default async function Dashboard() {
                     <UserCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{users.filter(u => u.status === 'active').length}</div>
-                    <p className="text-xs text-muted-foreground">98% of total users</p>
+                    <div className="text-2xl font-bold">{activeUsers}</div>
+                     <p className="text-xs text-muted-foreground">{users.length > 0 ? `${Math.round((activeUsers / users.length) * 100)}% of total users` : 'N/A'}</p>
                     </CardContent>
                 </Card>
                 </Link>
@@ -65,7 +76,7 @@ export default async function Dashboard() {
                     <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">88%</div>
+                    <div className="text-2xl font-bold">{avgCredibility}%</div>
                     <p className="text-xs text-muted-foreground">-1.2% from last week</p>
                 </CardContent>
                 </Card>
@@ -78,7 +89,7 @@ export default async function Dashboard() {
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                        <div className="text-2xl font-bold">1,234</div>
+                        <div className="text-2xl font-bold">{documents.length}</div>
                         <p className="text-xs text-muted-foreground">
                             +20.1% from last month
                         </p>
@@ -104,14 +115,14 @@ export default async function Dashboard() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {recentReports.map((doc) => (
+                    {recentReports.map((doc: DocumentReport) => (
                         <TableRow key={doc.id}>
                         <TableCell className="font-medium">{doc.documentType}</TableCell>
                         <TableCell>
                             <Badge variant={doc.status === 'lost' ? 'destructive' : doc.status === 'found' ? 'secondary' : 'default'} className="capitalize">{doc.status}</Badge>
                         </TableCell>
                         <TableCell>{doc.location}</TableCell>
-                        <TableCell>{doc.reportDate}</TableCell>
+                        <TableCell>{new Date(doc.reportDate).toLocaleDateString()}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>
@@ -122,8 +133,12 @@ export default async function Dashboard() {
     )
   }
 
+  const foundDocuments = documents.filter(d => d.status === 'found').length;
+  const claimedDocuments = documents.filter(d => d.status === 'claimed').length;
+  const matchRate = documents.length > 0 ? (claimedDocuments / documents.length) * 100 : 0;
+
   return (
-    <>
+    <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         <Link href="/documents/search">
           <Card className="hover:bg-muted/50 transition-colors">
@@ -134,7 +149,7 @@ export default async function Dashboard() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
+              <div className="text-2xl font-bold">{documents.length}</div>
               <p className="text-xs text-muted-foreground">
                 +20.1% from last month
               </p>
@@ -148,7 +163,7 @@ export default async function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+450</div>
+              <div className="text-2xl font-bold">+{foundDocuments}</div>
               <p className="text-xs text-muted-foreground">
                 +180.1% from last month
               </p>
@@ -162,7 +177,7 @@ export default async function Dashboard() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+231</div>
+              <div className="text-2xl font-bold">+{claimedDocuments}</div>
               <p className="text-xs text-muted-foreground">+19% from last month</p>
             </CardContent>
           </Card>
@@ -174,7 +189,7 @@ export default async function Dashboard() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">57.3%</div>
+              <div className="text-2xl font-bold">{matchRate.toFixed(1)}%</div>
               <p className="text-xs text-muted-foreground">+2.1% since last week</p>
             </CardContent>
           </Card>
@@ -205,13 +220,13 @@ export default async function Dashboard() {
                     <Badge variant={doc.status === 'lost' ? 'destructive' : doc.status === 'found' ? 'secondary' : 'default'} className="capitalize">{doc.status}</Badge>
                   </TableCell>
                   <TableCell>{doc.location}</TableCell>
-                  <TableCell>{doc.reportDate}</TableCell>
+                  <TableCell>{new Date(doc.reportDate).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }

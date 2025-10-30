@@ -31,32 +31,56 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, User, CheckCircle } from "lucide-react";
-import { enquiries as initialEnquiries, users } from "@/lib/data";
+import { getEnquiries, getUsers } from "@/lib/data";
 import Link from "next/link";
-import { useState } from "react";
-import type { Enquiry } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { Enquiry, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function AdminEnquiriesPage() {
-  const [enquiryItems, setEnquiryItems] = useState<Enquiry[]>(initialEnquiries);
+  const [enquiryItems, setEnquiryItems] = useState<Enquiry[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchData() {
+        const [enquiriesData, usersData] = await Promise.all([getEnquiries(), getUsers()]);
+        setEnquiryItems(enquiriesData);
+        setUsers(usersData);
+    }
+    fetchData();
+  }, []);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
 
-  const handleStatusChange = (id: string, newStatus: "open" | "resolved") => {
-    setEnquiryItems(enquiryItems.map(e => e.id === id ? { ...e, status: newStatus } : e));
-    toast({
-      title: "Enquiry Updated",
-      description: `Enquiry has been marked as ${newStatus}.`,
-    });
+  const handleStatusChange = async (id: string, newStatus: "open" | "resolved") => {
+    try {
+        const response = await fetch(`http://localhost:5000/api/enquiries/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) throw new Error("Failed to update status");
+        
+        setEnquiryItems(enquiryItems.map(e => e.id === id ? { ...e, status: newStatus } : e));
+        toast({
+        title: "Enquiry Updated",
+        description: `Enquiry has been marked as ${newStatus}.`,
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update enquiry status.",
+        });
+    }
   };
 
   return (
@@ -96,11 +120,11 @@ export default function AdminEnquiriesPage() {
                               <div className="font-medium">{user.name}</div>
                           </div>
                       ) : (
-                          <div className="font-medium">Unknown User</div>
+                          <div className="font-medium">{item.email}</div> // Fallback to email if user not found
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{item.subject}</TableCell>
-                    <TableCell>{item.date}</TableCell>
+                    <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant={item.status === 'resolved' ? 'default' : 'secondary'} className="capitalize">{item.status}</Badge>
                     </TableCell>
@@ -126,10 +150,12 @@ export default function AdminEnquiriesPage() {
                               </DropdownMenuItem>
                           }
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'resolved')}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Mark as Resolved
-                          </DropdownMenuItem>
+                          {item.status !== 'resolved' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'resolved')}>
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Mark as Resolved
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -142,11 +168,11 @@ export default function AdminEnquiriesPage() {
       </Card>
       {selectedEnquiry && (
          <Dialog open={!!selectedEnquiry} onOpenChange={(isOpen) => !isOpen && setSelectedEnquiry(null)}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px] bg-card/80 backdrop-blur-sm">
                 <DialogHeader>
                     <DialogTitle>{selectedEnquiry.subject}</DialogTitle>
                     <DialogDescription>
-                        From: {users.find(u => u.id === selectedEnquiry.userId)?.name || 'Unknown User'} on {selectedEnquiry.date}
+                        From: {users.find(u => u.id === selectedEnquiry.userId)?.name || selectedEnquiry.email} on {new Date(selectedEnquiry.date).toLocaleDateString()}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">

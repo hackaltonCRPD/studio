@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -24,6 +25,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Send } from "lucide-react"
+import { getAuthenticatedUser } from "@/lib/auth"
+import { useEffect, useState } from "react"
+import type { User } from "@/lib/types"
 
 const formSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters."),
@@ -32,6 +36,12 @@ const formSchema = z.object({
 
 export default function FeedbackPage() {
   const { toast } = useToast()
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    getAuthenticatedUser().then(setUser);
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,13 +50,32 @@ export default function FeedbackPage() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    toast({
-      title: "Feedback Submitted",
-      description: "Thank you for your feedback! We appreciate your input.",
-    })
-    form.reset()
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({variant: "destructive", title: "Authentication Error", description: "You must be logged in to submit feedback."});
+        return;
+    }
+    try {
+        const response = await fetch(`http://localhost:5000/api/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...values, userId: user.id }),
+        });
+        if (!response.ok) throw new Error("Failed to submit feedback");
+        
+        toast({
+        title: "Feedback Submitted",
+        description: "Thank you for your feedback! We appreciate your input.",
+        })
+        form.reset()
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: "destructive",
+            title: "Submission Failed",
+            description: "There was a problem submitting your feedback. Please try again.",
+        })
+    }
   }
 
   return (

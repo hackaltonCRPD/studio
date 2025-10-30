@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -9,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { users } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { getUserById } from "@/lib/data";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -36,6 +37,7 @@ import type { User, UserRole } from "@/lib/types";
 import Link from "next/link";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -45,39 +47,78 @@ const formSchema = z.object({
 });
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
-    const user = users.find(u => u.id === params.id);
     const { toast } = useToast();
     const router = useRouter();
+    const [user, setUser] = useState<User | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getAuthenticatedUser().then(setCurrentUser);
-    }, []);
+        async function fetchData() {
+            setIsLoading(true);
+            const [userToEdit, authUser] = await Promise.all([
+                getUserById(params.id),
+                getAuthenticatedUser()
+            ]);
+            setUser(userToEdit);
+            setCurrentUser(authUser);
+            setIsLoading(false);
 
-    if (!user) {
-        notFound();
-    }
+             if (userToEdit) {
+                form.reset({
+                    name: userToEdit.name,
+                    email: userToEdit.email,
+                    phoneNumber: userToEdit.phoneNumber || "",
+                    role: userToEdit.role,
+                });
+            }
+        }
+        fetchData();
+    }, [params.id]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: user.name,
-            email: user.email,
-            phoneNumber: user.phoneNumber || "",
-            role: user.role,
+            name: "",
+            email: "",
+            phoneNumber: "",
+            role: "reporter",
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log("Updated user data:", values);
-        // Here you would typically call an API to update the user data.
-        // For now, we'll just show a success toast.
-        toast({
-            title: "User Updated",
-            description: `${values.name}'s profile has been successfully updated.`,
-        });
-        router.push("/admin");
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/users/${params.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values),
+            });
+            if (!response.ok) throw new Error("Failed to update user");
+
+            toast({
+                title: "User Updated",
+                description: `${values.name}'s profile has been successfully updated.`,
+            });
+            router.push("/admin");
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+             toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "Could not update user.",
+            });
+        }
     }
+
+    if (isLoading) {
+        return <Skeleton className="h-96 w-full" />;
+    }
+    
+    if (!user) {
+        return <div>User not found.</div>
+    }
+
 
     const availableRoles: UserRole[] = currentUser?.role === 'admin' 
         ? ["admin", "rc_staff", "police", "reporter", "finder"]

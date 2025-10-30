@@ -1,39 +1,57 @@
 
+
 "use client"
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { getAuthenticatedUser } from '@/lib/auth';
-import { notifications as initialNotifications } from '@/lib/data';
-import type { Notification } from '@/lib/types';
+import { getNotificationsForUser } from '@/lib/data';
+import type { Notification, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
-import { MOCK_USER } from '@/lib/auth'; // Using mock for simplicity
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-    // In a real app, you would fetch the current user from your auth system
-    const currentUser = MOCK_USER; 
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const userNotifications = useMemo(
-        () => notifications
-                .filter(n => n.userId === currentUser.id)
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
-        [notifications, currentUser.id]
-    );
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            const authUser = await getAuthenticatedUser();
+            setUser(authUser);
+            if (authUser) {
+                const userNotifications = await getNotificationsForUser(authUser.id);
+                setNotifications(userNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+            }
+            setIsLoading(false);
+        }
+        fetchData();
+    }, []);
 
-    const handleMarkAsRead = (id: string) => {
-        setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+    const handleMarkAsRead = async (id: string) => {
+        try {
+            await fetch(`http://localhost:5000/api/notifications/${id}/read`, { method: 'PUT' });
+            setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+        } catch (error) {
+            console.error("Failed to mark notification as read", error);
+        }
     };
 
-    const handleMarkAllAsRead = () => {
-        setNotifications(notifications.map(n => n.userId === currentUser.id ? { ...n, isRead: true } : n));
+    const handleMarkAllAsRead = async () => {
+        if (!user) return;
+        try {
+            await fetch(`http://localhost:5000/api/notifications/user/${user.id}/read-all`, { method: 'PUT' });
+            setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+        } catch (error) {
+            console.error("Failed to mark all notifications as read", error);
+        }
     };
 
-    const unreadCount = useMemo(() => userNotifications.filter(n => !n.isRead).length, [userNotifications]);
+    const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
     return (
         <div className="space-y-6">
@@ -43,10 +61,10 @@ export default function NotificationsPage() {
                         Notifications
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        You have {unreadCount} unread messages.
+                        {isLoading ? <Skeleton className="h-4 w-32" /> : `You have ${unreadCount} unread messages.`}
                     </p>
                 </div>
-                 {unreadCount > 0 && (
+                 {unreadCount > 0 && !isLoading && (
                     <Button onClick={handleMarkAllAsRead}>
                         <Check className="mr-2 h-4 w-4" />
                         Mark all as read
@@ -56,9 +74,15 @@ export default function NotificationsPage() {
 
             <Card>
                 <CardContent className="p-0">
-                    {userNotifications.length > 0 ? (
+                    {isLoading ? (
+                        <div className="p-6 space-y-4">
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-20 w-full" />
+                        </div>
+                    ) : notifications.length > 0 ? (
                         <div className="divide-y divide-border">
-                            {userNotifications.map(notification => (
+                            {notifications.map(notification => (
                                 <Link key={notification.id} href={notification.link || `/notifications/${notification.id}`} className="block">
                                     <div className={cn(
                                         "p-4 hover:bg-muted/50 transition-colors",

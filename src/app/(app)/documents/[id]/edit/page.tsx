@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -9,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { documents } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { getDocumentById } from "@/lib/data";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -40,6 +41,9 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
+import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { DocumentReport } from "@/lib/types";
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -53,32 +57,72 @@ const formSchema = z.object({
 });
 
 export default function EditDocumentPage({ params }: { params: { id: string } }) {
-    const document = documents.find(d => d.id === params.id);
     const { toast } = useToast();
     const router = useRouter();
+    const [document, setDocument] = useState<DocumentReport | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    if (!document) {
-        notFound();
-    }
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            documentType: document.documentType,
-            description: document.description,
-            location: document.location,
-            dateLost: new Date(document.dateLost),
-            status: document.status,
+            documentType: "",
+            description: "",
+            location: "",
+            status: "lost",
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log("Updated document data:", values);
-        toast({
-            title: "Document Updated",
-            description: `The document report has been successfully updated.`,
-        });
-        router.push(`/documents/${document?.id}`);
+    useEffect(() => {
+        const fetchDoc = async () => {
+            setIsLoading(true);
+            const doc = await getDocumentById(params.id);
+            if (doc) {
+                setDocument(doc);
+                form.reset({
+                    documentType: doc.documentType,
+                    description: doc.description,
+                    location: doc.location,
+                    dateLost: new Date(doc.dateLost),
+                    status: doc.status,
+                });
+            }
+            setIsLoading(false);
+        }
+        fetchDoc();
+    }, [params.id, form]);
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/documents/${params.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values),
+            });
+            if (!response.ok) throw new Error("Failed to update document");
+
+            toast({
+                title: "Document Updated",
+                description: `The document report has been successfully updated.`,
+            });
+            router.push(`/documents/${params.id}`);
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "Could not update document report.",
+            });
+        }
+    }
+    
+    if (isLoading) {
+        return <Skeleton className="w-full h-96" />
+    }
+
+    if (!document) {
+        return <div>Document not found</div>;
     }
 
     return (

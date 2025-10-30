@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -26,6 +27,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Send } from "lucide-react"
 
 const formSchema = z.object({
+  name: z.string().min(2, "Name is required."),
+  email: z.string().email("A valid email is required."),
   subject: z.string().min(5, "Subject must be at least 5 characters."),
   question: z.string().min(10, "Question must be at least 10 characters."),
 })
@@ -35,18 +38,36 @@ export default function EnquiryPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: "",
+      email: "",
       subject: "",
       question: "",
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    toast({
-      title: "Enquiry Submitted",
-      description: "Thank you for your question! We will get back to you shortly.",
-    })
-    form.reset()
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/enquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) throw new Error("Failed to submit enquiry");
+
+      toast({
+        title: "Enquiry Submitted",
+        description: "Thank you for your question! We will get back to you shortly.",
+      })
+      form.reset()
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: "There was a problem submitting your enquiry. Please try again.",
+      })
+    }
   }
 
   return (
@@ -60,6 +81,32 @@ export default function EnquiryPage() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+             <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Your Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Your Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="you@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="subject"

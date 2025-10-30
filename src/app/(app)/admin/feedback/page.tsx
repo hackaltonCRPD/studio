@@ -31,31 +31,57 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, User, CheckCircle } from "lucide-react";
-import { feedback as initialFeedback, users } from "@/lib/data";
+import { getFeedbacks, getUsers } from "@/lib/data";
 import Link from "next/link";
-import { useState } from "react";
-import type { Feedback } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { Feedback, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function AdminFeedbackPage() {
-  const [feedbackItems, setFeedbackItems] = useState<Feedback[]>(initialFeedback);
+  const [feedbackItems, setFeedbackItems] = useState<Feedback[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchData() {
+      const [feedbackData, usersData] = await Promise.all([getFeedbacks(), getUsers()]);
+      setFeedbackItems(feedbackData);
+      setUsers(usersData);
+    }
+    fetchData();
+  }, []);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
 
-  const handleStatusChange = (id: string, newStatus: "open" | "resolved") => {
-    setFeedbackItems(feedbackItems.map(f => f.id === id ? { ...f, status: newStatus } : f));
-    toast({
-      title: "Feedback Updated",
-      description: `Feedback has been marked as ${newStatus}.`,
-    });
+  const handleStatusChange = async (id: string, newStatus: "open" | "resolved") => {
+    try {
+        const response = await fetch(`http://localhost:5000/api/feedback/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) throw new Error("Failed to update status");
+
+        setFeedbackItems(feedbackItems.map(f => f.id === id ? { ...f, status: newStatus } : f));
+        toast({
+            title: "Feedback Updated",
+            description: `Feedback has been marked as ${newStatus}.`,
+        });
+    } catch(error) {
+         toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update feedback status.",
+        });
+    }
   };
 
   return (
@@ -99,7 +125,7 @@ export default function AdminFeedbackPage() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{item.subject}</TableCell>
-                    <TableCell>{item.date}</TableCell>
+                    <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant={item.status === 'resolved' ? 'default' : 'secondary'} className="capitalize">{item.status}</Badge>
                     </TableCell>
@@ -125,10 +151,12 @@ export default function AdminFeedbackPage() {
                               </DropdownMenuItem>
                           }
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'resolved')}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Mark as Resolved
-                          </DropdownMenuItem>
+                          {item.status !== 'resolved' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'resolved')}>
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Mark as Resolved
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -141,11 +169,11 @@ export default function AdminFeedbackPage() {
       </Card>
       {selectedFeedback && (
          <Dialog open={!!selectedFeedback} onOpenChange={(isOpen) => !isOpen && setSelectedFeedback(null)}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px] bg-card/80 backdrop-blur-sm">
                 <DialogHeader>
                     <DialogTitle>{selectedFeedback.subject}</DialogTitle>
                     <DialogDescription>
-                        From: {users.find(u => u.id === selectedFeedback.userId)?.name || 'Unknown User'} on {selectedFeedback.date}
+                        From: {users.find(u => u.id === selectedFeedback.userId)?.name || 'Unknown User'} on {new Date(selectedFeedback.date).toLocaleDateString()}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">

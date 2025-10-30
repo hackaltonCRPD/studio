@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { notifications as initialNotifications } from "@/lib/data";
+import { getNotificationsForUser } from "@/lib/data";
 import type { Notification, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -18,35 +18,48 @@ import Link from "next/link";
 import { Separator } from "../ui/separator";
 
 export function NotificationsPopover({ user }: { user: User }) {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-
-  // Filter notifications for the current user
-  const userNotifications = useMemo(
-    () => notifications.filter((n) => n.userId === user.id).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
-    [notifications, user.id]
-  );
   
-  const unreadCount = useMemo(() => userNotifications.filter(n => !n.isRead).length, [userNotifications]);
+  useEffect(() => {
+    if (user?.id) {
+        getNotificationsForUser(user.id).then(data => {
+            const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setNotifications(sorted);
+        });
+    }
+  }, [user?.id]);
+  
+  const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
-  const handleMarkAsRead = (e: React.MouseEvent, id: string) => {
+  const handleMarkAsRead = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+     try {
+        await fetch(`http://localhost:5000/api/notifications/${id}/read`, { method: 'PUT' });
+        setNotifications(
+            notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        );
+    } catch (error) {
+        console.error("Failed to mark as read", error);
+    }
   };
   
-  const handleMarkAllAsRead = () => {
-    setNotifications(
-      notifications.map((n) => (n.userId === user.id ? { ...n, isRead: true } : n))
-    );
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+    try {
+        await fetch(`http://localhost:5000/api/notifications/user/${user.id}/read-all`, { method: 'PUT' });
+        setNotifications(
+            notifications.map((n) => ({ ...n, isRead: true }))
+        );
+    } catch (error) {
+        console.error("Failed to mark all as read", error);
+    }
   }
 
   // When the popover opens, mark all notifications as read after a short delay
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && unreadCount > 0) {
       const timer = setTimeout(() => {
         handleMarkAllAsRead();
       }, 2000); // 2-second delay
@@ -110,14 +123,14 @@ export function NotificationsPopover({ user }: { user: User }) {
                 }
             </CardHeader>
             <CardContent className="p-0">
-                {userNotifications.length > 0 ? (
+                {notifications.length > 0 ? (
                     <div className="max-h-80 overflow-y-auto">
-                        {userNotifications.slice(0, 5).map((notification, index) => (
+                        {notifications.slice(0, 5).map((notification, index) => (
                            <div key={notification.id}>
                              <Link href={notification.link || `/notifications/${notification.id}`}>
                                 <NotificationContent notification={notification} />
                              </Link>
-                            {index < userNotifications.slice(0, 5).length - 1 && <Separator />}
+                            {index < notifications.slice(0, 5).length - 1 && <Separator />}
                            </div>
                         ))}
                     </div>
@@ -127,7 +140,7 @@ export function NotificationsPopover({ user }: { user: User }) {
                     </div>
                 )}
             </CardContent>
-            {userNotifications.length > 0 &&
+            {notifications.length > 0 &&
                 <CardFooter className="py-3 px-4 border-t justify-center">
                      <Button variant="ghost" size="sm" asChild>
                         <Link href="/notifications">View all notifications</Link>

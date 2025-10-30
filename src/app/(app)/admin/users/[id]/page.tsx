@@ -1,5 +1,4 @@
 
-"use client"
 
 import {
   Card,
@@ -9,8 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { users } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { getUserById } from "@/lib/data";
+import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +19,8 @@ import type { UserStatus } from "@/lib/types";
 import { ArrowLeft, Edit, FileText } from "lucide-react";
 
 
-export default function UserDetailsPage({ params }: { params: { id: string } }) {
-    const user = users.find(u => u.id === params.id);
-    const router = useRouter();
+export default async function UserDetailsPage({ params }: { params: { id: string } }) {
+    const user = await getUserById(params.id);
 
     if (!user) {
         notFound();
@@ -54,9 +52,11 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
     return (
         <div className="space-y-6">
              <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.back()}>
+                <Button variant="outline" size="icon" className="h-7 w-7" asChild>
+                  <Link href="/admin">
                     <ArrowLeft className="h-4 w-4" />
                     <span className="sr-only">Back</span>
+                  </Link>
                 </Button>
                 <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
                     User Details
@@ -95,7 +95,7 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                              </div>
                              <div>
                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">User ID</h3>
-                                <p className="text-sm">{user.id}</p>
+                                <p className="text-sm font-mono">{user.id}</p>
                              </div>
                         </div>
                         <div className="space-y-4">

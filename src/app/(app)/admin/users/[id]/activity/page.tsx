@@ -1,5 +1,4 @@
 
-"use client"
 
 import {
   Card,
@@ -16,17 +15,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { users, activityLogs } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { getUserById, getActivityLogsForUser } from "@/lib/data";
+import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Info, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-export default function ActivityLogPage({ params }: { params: { id: string } }) {
-  const user = users.find(u => u.id === params.id);
-  const logs = activityLogs.filter(log => log.userId === params.id);
-  const router = useRouter();
+export default async function ActivityLogPage({ params }: { params: { id: string } }) {
+  const [user, logs] = await Promise.all([
+      getUserById(params.id),
+      getActivityLogsForUser(params.id)
+  ]);
 
   if (!user) {
     notFound();
@@ -41,9 +41,11 @@ export default function ActivityLogPage({ params }: { params: { id: string } }) 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-          <span className="sr-only">Back</span>
+        <Button variant="outline" size="icon" className="h-7 w-7" asChild>
+          <Link href={`/admin/users/${params.id}`}>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Back</span>
+          </Link>
         </Button>
         <div className="flex-1">
             <h1 className="text-xl font-semibold tracking-tight">
@@ -84,7 +86,7 @@ export default function ActivityLogPage({ params }: { params: { id: string } }) 
                     <TableCell>
                         <Badge variant="outline">{log.ipAddress}</Badge>
                     </TableCell>
-                    <TableCell>{log.timestamp}</TableCell>
+                    <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
                   </TableRow>
                 ))
               ) : (

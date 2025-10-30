@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -19,13 +20,34 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, ShieldAlert, X } from "lucide-react";
-import { documents } from "@/lib/data";
+import { getDocuments } from "@/lib/data";
 import Link from "next/link";
-
-// Mock data for escalated cases - in a real app this would come from an API
-const escalatedCases = documents.filter(d => d.status === 'found').slice(0, 3).map(d => ({...d, escalationReason: "Multiple claims"}));
+import { useEffect, useState } from "react";
+import type { DocumentReport } from "@/lib/types";
 
 export default function PoliceDashboardPage() {
+  const [escalatedCases, setEscalatedCases] = useState<(DocumentReport & { escalationReason: string })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEscalated = async () => {
+        setIsLoading(true);
+        // In a real app, you'd fetch only escalated cases.
+        // We'll mock this by filtering for "found" and adding a reason.
+        const docs = await getDocuments({ status: "found" });
+        const mockEscalated = docs.slice(0,3).map(d => ({...d, escalationReason: "Multiple claims"}));
+        setEscalatedCases(mockEscalated);
+        setIsLoading(false);
+    }
+    fetchEscalated();
+  }, []);
+
+  const handleClaimAction = async (documentId: string, action: 'approve' | 'deny') => {
+      // In a real app, this would call an API endpoint to approve/deny the claim.
+      console.log(`Claim for doc ${documentId} was ${action}d.`);
+      // Optimistically remove from list
+      setEscalatedCases(escalatedCases.filter(c => c.id !== documentId));
+  }
 
   return (
      <div className="space-y-6">
@@ -59,31 +81,37 @@ export default function PoliceDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {escalatedCases.map((item) => (
-                        <TableRow key={item.id}>
-                            <TableCell>
-                                <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
-                            </TableCell>
-                            <TableCell className="font-medium">{item.documentType}</TableCell>
-                            <TableCell>
-                                <Badge variant="destructive">{item.escalationReason}</Badge>
-                            </TableCell>
-                            <TableCell>{item.reportDate}</TableCell>
-                            <TableCell className="flex gap-2">
-                                <Button size="sm" variant="outline" asChild>
-                                    <Link href={`/documents/${item.id}`}>View Details</Link>
-                                </Button>
-                                <Button size="sm">
-                                    <Check className="mr-2 h-4 w-4" />
-                                    Approve Claim
-                                </Button>
-                                <Button size="sm" variant="destructive">
-                                    <X className="mr-2 h-4 w-4" />
-                                    Deny Claim
-                                </Button>
-                            </TableCell>
-                        </TableRow>
-                        ))}
+                        {isLoading ? (
+                           <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading cases...</TableCell></TableRow>
+                        ) : escalatedCases.length === 0 ? (
+                           <TableRow><TableCell colSpan={5} className="h-24 text-center">No escalated cases.</TableCell></TableRow>
+                        ) : (
+                            escalatedCases.map((item) => (
+                            <TableRow key={item.id}>
+                                <TableCell>
+                                    <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
+                                </TableCell>
+                                <TableCell className="font-medium">{item.documentType}</TableCell>
+                                <TableCell>
+                                    <Badge variant="destructive">{item.escalationReason}</Badge>
+                                </TableCell>
+                                <TableCell>{new Date(item.reportDate).toLocaleDateString()}</TableCell>
+                                <TableCell className="flex gap-2">
+                                    <Button size="sm" variant="outline" asChild>
+                                        <Link href={`/documents/${item.id}`}>View Details</Link>
+                                    </Button>
+                                    <Button size="sm" onClick={() => handleClaimAction(item.id, 'approve')}>
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Approve Claim
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleClaimAction(item.id, 'deny')}>
+                                        <X className="mr-2 h-4 w-4" />
+                                        Deny Claim
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>

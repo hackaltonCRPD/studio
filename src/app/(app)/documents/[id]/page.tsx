@@ -1,5 +1,4 @@
 
-"use client"
 
 import {
   Card,
@@ -9,27 +8,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { documents, users } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { getDocumentById, getUserById } from "@/lib/data";
+import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { MOCK_USER } from "@/lib/auth"; // Using mock for simplicity
+import { getAuthenticatedUser } from "@/lib/auth";
 
-export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const document = documents.find(d => d.id === params.id);
-  const router = useRouter();
-  // In a real app, you would fetch the current user from your auth system
-  const currentUser = MOCK_USER; 
+export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
+  const document = await getDocumentById(params.id);
 
   if (!document) {
     notFound();
   }
 
-  const reportedByUser = users.find(u => u.id === document.reportedBy);
+  const [reportedByUser, currentUser] = await Promise.all([
+    getUserById(document.reportedBy),
+    getAuthenticatedUser()
+  ]);
+
   const isAdmin = currentUser.role === 'admin';
   const isPolice = currentUser.role === 'police';
   const canEdit = isAdmin || currentUser.id === document.reportedBy;
@@ -57,9 +57,11 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
   return (
     <div className="space-y-6">
         <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.back()}>
+            <Button variant="outline" size="icon" className="h-7 w-7" asChild>
+              <Link href="/documents/search">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Back</span>
+              </Link>
             </Button>
             <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
                 {document.documentType}
@@ -86,7 +88,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                     {document.imageUrl ? (
                         <Image
                             alt="Document image"
-                            className="aspect-square rounded-md object-cover w-full"
+                            className="aspect-video rounded-md object-cover w-full"
                             height="300"
                             src={document.imageUrl}
                             width="300"
@@ -116,7 +118,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                             <Calendar className="h-5 w-5 text-muted-foreground mt-1" />
                              <div>
                                 <h3 className="text-sm font-medium text-muted-foreground">Date Lost / Found</h3>
-                                <p>{document.dateLost}</p>
+                                <p>{new Date(document.dateLost).toLocaleDateString()}</p>
                             </div>
                         </div>
                          {canViewPhoneNumber() && reportedByUser?.phoneNumber && (
@@ -157,7 +159,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                     ) : (
                         <span className="font-semibold">Unknown User</span>
                     )}
-                    <span>on {document.reportDate}</span>
+                    <span>on {new Date(document.reportDate).toLocaleDateString()}</span>
                 </div>
             </CardFooter>
         </Card>
