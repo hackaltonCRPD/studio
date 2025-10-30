@@ -1,3 +1,4 @@
+
 import {
   Activity,
   CreditCard,
@@ -26,9 +27,19 @@ import { Badge } from "@/components/ui/badge";
 import { getDocuments, getUsers } from "@/lib/data";
 import { getAuthenticatedUser } from "@/lib/auth";
 import type { DocumentReport } from "@/lib/types";
+import { redirect } from "next/navigation";
 
 export default async function Dashboard() {
   const user = await getAuthenticatedUser();
+  
+  // Redirect users to their role-specific dashboards
+  if (user.role === 'rc_staff') {
+    redirect('/rc-staff/dashboard');
+  }
+  if (user.role === 'police') {
+    redirect('/police/dashboard');
+  }
+
   const [documents, users] = await Promise.all([
       getDocuments(),
       user.role === 'admin' ? getUsers() : Promise.resolve([])
@@ -133,6 +144,7 @@ export default async function Dashboard() {
     )
   }
 
+  // This part is for regular users ('reporter', 'finder')
   const foundDocuments = documents.filter(d => d.status === 'found').length;
   const claimedDocuments = documents.filter(d => d.status === 'claimed').length;
   const matchRate = documents.length > 0 ? (claimedDocuments / documents.length) * 100 : 0;
