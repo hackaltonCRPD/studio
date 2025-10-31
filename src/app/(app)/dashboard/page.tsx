@@ -1,4 +1,7 @@
 
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   Activity,
   CreditCard,
@@ -26,24 +29,63 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getDocuments, getUsers } from "@/lib/data";
 import { getAuthenticatedUser } from "@/lib/auth";
-import type { DocumentReport } from "@/lib/types";
-import { redirect } from "next/navigation";
+import type { DocumentReport, User } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function Dashboard() {
-  const user = await getAuthenticatedUser();
-  
-  // Redirect users to their role-specific dashboards
-  if (user.role === 'rc_staff') {
-    redirect('/rc-staff/dashboard');
-  }
-  if (user.role === 'police') {
-    redirect('/police/dashboard');
-  }
+export default function Dashboard() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [documents, setDocuments] = useState<DocumentReport[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [documents, users] = await Promise.all([
-      getDocuments(),
-      user.role === 'admin' ? getUsers() : Promise.resolve([])
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const authUser = await getAuthenticatedUser();
+        setUser(authUser);
+
+        if (authUser.role === 'rc_staff') {
+          router.replace('/rc-staff/dashboard');
+          return;
+        }
+        if (authUser.role === 'police') {
+          router.replace('/police/dashboard');
+          return;
+        }
+
+        const [docs, allUsers] = await Promise.all([
+          getDocuments(),
+          authUser.role === 'admin' ? getUsers() : Promise.resolve([])
+        ]);
+        setDocuments(docs);
+        if (allUsers) {
+          setUsers(allUsers);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [router]);
+
+  if (isLoading || !user) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   const recentReports = documents.slice(0, 5);
   const isAdmin = user.role === 'admin';

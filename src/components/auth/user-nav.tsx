@@ -17,9 +17,13 @@ import {
 import type { User } from "@/lib/types";
 import Link from "next/link";
 
-export function UserNav({ user }: { user: User }) {
+export function UserNav({ user }: { user: User | null }) {
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (

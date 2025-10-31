@@ -1,5 +1,9 @@
 
+"use client";
+
+import { useEffect, useState } from "react";
 import { getAuthenticatedUser } from "@/lib/auth";
+import type { User } from "@/lib/types";
 import { MainNav } from "@/components/layout/main-nav";
 import { UserNav } from "@/components/auth/user-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -14,13 +18,30 @@ import { Button } from "@/components/ui/button";
 import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function AppLayout({
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getAuthenticatedUser();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const authenticatedUser = await getAuthenticatedUser();
+        setUser(authenticatedUser);
+      } catch (error) {
+        console.error("Failed to fetch authenticated user:", error);
+        // Handle error case, e.g., redirect to login
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchUser();
+  }, []);
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -34,7 +55,7 @@ export default async function AppLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-               <MainNav userRole={user.role} />
+              {user && <MainNav userRole={user.role} />}
             </nav>
           </div>
         </div>
@@ -61,7 +82,7 @@ export default async function AppLayout({
                   <Logo className="h-6 w-6 text-primary" />
                   <span className="font-headline">DocuFind</span>
                 </Link>
-                <MainNav userRole={user.role} />
+                {user && <MainNav userRole={user.role} />}
               </nav>
             </SheetContent>
           </Sheet>
@@ -77,9 +98,19 @@ export default async function AppLayout({
               </div>
             </form>
           </div>
-          <NotificationsPopover user={user} />
-          <ThemeToggle />
-          <UserNav user={user} />
+          {isLoading ? (
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-9 w-9 rounded-full" />
+            </div>
+          ) : user ? (
+            <>
+              <NotificationsPopover user={user} />
+              <ThemeToggle />
+              <UserNav user={user} />
+            </>
+          ) : null}
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">
           {children}

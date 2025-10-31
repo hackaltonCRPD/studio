@@ -17,15 +17,17 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import Link from "next/link";
 import { Separator } from "../ui/separator";
 
-export function NotificationsPopover({ user }: { user: User }) {
+export function NotificationsPopover({ user }: { user: User | null }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   
   useEffect(() => {
     if (user?.id) {
         getNotificationsForUser(user.id).then(data => {
-            const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-            setNotifications(sorted);
+            if (data) {
+                const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                setNotifications(sorted);
+            }
         });
     }
   }, [user?.id]);
@@ -65,6 +67,7 @@ export function NotificationsPopover({ user }: { user: User }) {
       }, 2000); // 2-second delay
       return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const NotificationContent = ({ notification }: { notification: Notification }) => (

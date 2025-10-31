@@ -1,5 +1,7 @@
 
 
+"use client";
+
 import {
   Card,
   CardContent,
@@ -9,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getDocumentById, getUserById } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,18 +19,49 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import type { DocumentReport, User as UserType } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const document = await getDocumentById(params.id);
+export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
+  const [document, setDocument] = useState<DocumentReport | null>(null);
+  const [reportedByUser, setReportedByUser] = useState<UserType | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
-  if (!document) {
-    notFound();
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setIsLoading(true);
+      const doc = await getDocumentById(params.id);
+      if (!doc) {
+        setIsLoading(false);
+        notFound();
+        return;
+      }
+      setDocument(doc);
+
+      const [reporter, authUser] = await Promise.all([
+        getUserById(doc.reportedBy),
+        getAuthenticatedUser(),
+      ]);
+
+      setReportedByUser(reporter);
+      setCurrentUser(authUser);
+      setIsLoading(false);
+    };
+
+    fetchDetails();
+  }, [params.id]);
+
+
+  if (isLoading) {
+    return <Skeleton className="h-96 w-full" />
   }
 
-  const [reportedByUser, currentUser] = await Promise.all([
-    getUserById(document.reportedBy),
-    getAuthenticatedUser()
-  ]);
+  if (!document || !currentUser) {
+    return notFound();
+  }
 
   const isAdmin = currentUser.role === 'admin';
   const isPolice = currentUser.role === 'police';
