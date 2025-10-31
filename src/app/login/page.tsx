@@ -52,16 +52,31 @@ export default function LoginPage() {
         throw new Error(errorData.message || "Login failed. Please check your credentials.");
       }
 
-      // The backend sets an httpOnly cookie, so no token handling is needed on the client.
-      const user = await response.json();
+      const { user } = await response.json();
       
       toast({
         title: "Login Successful",
         description: `Welcome back, ${user.name}!`,
       });
 
-      router.push("/dashboard");
-      router.refresh(); // This forces a refresh of the layout and fetches user data
+      let dashboardUrl = "/dashboard";
+      switch(user.role) {
+        case "rc_staff":
+          dashboardUrl = "/rc-staff/dashboard";
+          break;
+        case "police":
+          dashboardUrl = "/police/dashboard";
+          break;
+        case "admin":
+          dashboardUrl = "/dashboard";
+          break;
+        default:
+          dashboardUrl = "/dashboard";
+          break;
+      }
+      
+      router.push(dashboardUrl);
+      router.refresh();
 
     } catch (error: any) {
       console.error(error);
