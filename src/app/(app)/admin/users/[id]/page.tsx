@@ -1,5 +1,7 @@
 
 
+"use client";
+
 import {
   Card,
   CardContent,
@@ -15,12 +17,43 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
-import type { UserStatus } from "@/lib/types";
+import type { User, UserStatus } from "@/lib/types";
 import { ArrowLeft, Edit, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
-export default async function UserDetailsPage({ params }: { params: { id: string } }) {
-    const user = await getUserById(params.id);
+export default function UserDetailsPage({ params }: { params: { id: string } }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        getUserById(params.id).then(fetchedUser => {
+            if (!fetchedUser) {
+                notFound();
+                return;
+            }
+            setUser(fetchedUser);
+            setIsLoading(false);
+        })
+    }, [params.id]);
+
+
+    if(isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-7 w-7 rounded-full" />
+                    <Skeleton className="h-6 w-32" />
+                    <div className="hidden items-center gap-2 md:ml-auto md:flex">
+                        <Skeleton className="h-8 w-20" />
+                    </div>
+                </div>
+                <Skeleton className="h-96 w-full" />
+            </div>
+        )
+    }
 
     if (!user) {
         notFound();

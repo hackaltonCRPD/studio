@@ -39,9 +39,56 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getUsers } from "@/lib/data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
-export function UserTable({ initialUsers }: { initialUsers: User[] }) {
+export default function AdminPage() {
+  const [initialUsers, setInitialUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getUsers().then(users => {
+      setInitialUsers(users);
+      setIsLoading(false);
+    });
+  }, []);
+
+  if (isLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            </CardContent>
+        </Card>
+    )
+  }
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>User Management</CardTitle>
+        <CardDescription>
+          View, manage, and edit all users in the system.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <UserTable initialUsers={initialUsers} />
+      </CardContent>
+    </Card>
+  )
+}
+
+
+function UserTable({ initialUsers }: { initialUsers: User[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -115,8 +162,6 @@ export function UserTable({ initialUsers }: { initialUsers: User[] }) {
   const userRoles: UserRole[] = ["admin", "rc_staff", "police", "reporter", "finder"];
   const userStatuses: UserStatus[] = ["active", "suspended", "archived"];
   
-  // This is a client component, so we can't use async/await in the main body.
-  // Instead, we use a client-side navigation.
   const handleFilterChange = () => {
     const params = new URLSearchParams(searchParams);
     if (statusFilter !== 'all') {

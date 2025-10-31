@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -45,6 +46,10 @@ export default function Dashboard() {
       setIsLoading(true);
       try {
         const authUser = await getAuthenticatedUser();
+        if (!authUser) {
+          router.replace('/login');
+          return;
+        }
         setUser(authUser);
 
         if (authUser.role === 'rc_staff') {
@@ -66,6 +71,8 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        // Optionally, redirect to login or show an error message
+        // For now, we'll just stop loading.
       } finally {
         setIsLoading(false);
       }

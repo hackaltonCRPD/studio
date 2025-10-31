@@ -5,20 +5,21 @@ import type { User, UserRole } from "@/lib/types";
 const MOCK_USER_ID = "66a3ff152538183187c5364b"; // This should match an ID in your DB
 const API_URL = "http://localhost:5000/api";
 
-export async function getAuthenticatedUser(): Promise<User> {
+export async function getAuthenticatedUser(): Promise<User | null> {
   // Simulate an API call to get the currently authenticated user
   try {
     const response = await fetch(`${API_URL}/users/${MOCK_USER_ID}`);
     if (!response.ok) {
-      console.error("Authentication failed: Could not fetch user.");
-      throw new Error("Authentication failed");
+      console.error("Authentication failed: Could not fetch user.", response.statusText);
+      return null;
     }
     const user = await response.json();
     return {...user, id: user._id.toString()};
   } catch (error) {
     console.error("Error during authentication:", error);
-    // Fallback to a guest-like user or throw an error
-    throw new Error("Could not authenticate user.");
+    // In case of a network error or if the backend is down, return null.
+    // The UI will handle the null user state (e.g., show login, show loading state).
+    return null;
   }
 }
 

@@ -77,9 +77,17 @@ export default function SearchDocumentsPage() {
     
     const params = new URLSearchParams(searchParams);
     if (value && value !== 'all') {
-        params.set(filterName, value);
+        if (filterName === 'location') {
+            params.set('q', value);
+        } else {
+            params.set(filterName, value);
+        }
     } else {
-        params.delete(filterName);
+        if (filterName === 'location') {
+            params.delete('q');
+        } else {
+            params.delete(filterName);
+        }
     }
     router.push(`/documents/search?${params.toString()}`);
   };

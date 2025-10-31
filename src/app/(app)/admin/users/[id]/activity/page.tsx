@@ -1,4 +1,5 @@
 
+"use client";
 
 import {
   Card,
@@ -21,21 +22,72 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Info, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import type { ActivityLog, User } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function ActivityLogPage({ params }: { params: { id: string } }) {
-  const [user, logs] = await Promise.all([
-      getUserById(params.id),
-      getActivityLogsForUser(params.id)
-  ]);
+export default function ActivityLogPage({ params }: { params: { id: string } }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!user) {
-    notFound();
-  }
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      const [user, logs] = await Promise.all([
+          getUserById(params.id),
+          getActivityLogsForUser(params.id)
+      ]);
+      
+      if (!user) {
+        setIsLoading(false);
+        notFound();
+        return;
+      }
+
+      setUser(user);
+      setLogs(logs);
+      setIsLoading(false);
+    }
+    fetchData();
+  }, [params.id]);
+
   
   const getActivityIcon = (activity: string) => {
     if (activity.toLowerCase().includes('login')) return <Clock className="h-4 w-4 text-green-500" />;
     if (activity.toLowerCase().includes('failed')) return <ShieldAlert className="h-4 w-4 text-red-500" />;
     return <Info className="h-4 w-4 text-blue-500" />;
+  }
+
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-7 w-7 rounded-full" />
+          <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return notFound();
   }
 
   return (

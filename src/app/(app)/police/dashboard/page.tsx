@@ -24,6 +24,7 @@ import { getDocuments } from "@/lib/data";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { DocumentReport } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PoliceDashboardPage() {
   const [escalatedCases, setEscalatedCases] = useState<(DocumentReport & { escalationReason: string })[]>([]);
@@ -34,9 +35,13 @@ export default function PoliceDashboardPage() {
         setIsLoading(true);
         // In a real app, you'd fetch only escalated cases.
         // We'll mock this by filtering for "found" and adding a reason.
-        const docs = await getDocuments({ status: "found" });
-        const mockEscalated = docs.slice(0,3).map(d => ({...d, escalationReason: "Multiple claims"}));
-        setEscalatedCases(mockEscalated);
+        try {
+          const docs = await getDocuments({ status: "found" });
+          const mockEscalated = docs.slice(0,3).map(d => ({...d, escalationReason: "Multiple claims"}));
+          setEscalatedCases(mockEscalated);
+        } catch (error) {
+          console.error("Failed to fetch escalated cases", error);
+        }
         setIsLoading(false);
     }
     fetchEscalated();
@@ -47,6 +52,31 @@ export default function PoliceDashboardPage() {
       console.log(`Claim for doc ${documentId} was ${action}d.`);
       // Optimistically remove from list
       setEscalatedCases(escalatedCases.filter(c => c.id !== documentId));
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-56" />
+                <Skeleton className="h-4 w-80" />
+            </CardHeader>
+        </Card>
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <ShieldAlert className="h-6 w-6 text-destructive" />
+                    <Skeleton className="h-8 w-48" />
+                </div>
+                <Skeleton className="h-4 w-96" />
+            </CardHeader>
+            <CardContent>
+                <Skeleton className="h-48 w-full" />
+            </CardContent>
+        </Card>
+    </div>
+    )
   }
 
   return (
@@ -81,9 +111,7 @@ export default function PoliceDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading ? (
-                           <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading cases...</TableCell></TableRow>
-                        ) : escalatedCases.length === 0 ? (
+                        {escalatedCases.length === 0 ? (
                            <TableRow><TableCell colSpan={5} className="h-24 text-center">No escalated cases.</TableCell></TableRow>
                         ) : (
                             escalatedCases.map((item) => (

@@ -23,6 +23,7 @@ import { getDocuments } from "@/lib/data";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { DocumentReport } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Claim = DocumentReport & { claimantName: string };
 
@@ -36,16 +37,19 @@ export default function RCStaffDashboardPage() {
     const fetchData = async () => {
         setIsLoading(true);
         // In a real app, you'd have specific endpoints for these
-        const [allDocs, found, claimed] = await Promise.all([
-            getDocuments(),
-            getDocuments({status: 'found'}),
-            getDocuments({status: 'claimed'})
-        ]);
-        
-        // Mocking claims and handovers
-        setFoundItems(found);
-        setPendingClaims(found.slice(0,2).map(d => ({ ...d, claimantName: 'John Doe' })));
-        setRecentHandovers(claimed.slice(0,3));
+        try {
+            const [found, claimed] = await Promise.all([
+                getDocuments({status: 'found'}),
+                getDocuments({status: 'claimed'})
+            ]);
+            
+            // Mocking claims and handovers
+            setFoundItems(found);
+            setPendingClaims(found.slice(0,2).map(d => ({ ...d, claimantName: 'John Doe' })));
+            setRecentHandovers(claimed.slice(0,3));
+        } catch (error) {
+            console.error("Failed to fetch RC Staff data", error);
+        }
 
         setIsLoading(false);
     }
@@ -58,6 +62,45 @@ export default function RCStaffDashboardPage() {
       setPendingClaims(pendingClaims.filter(c => c.id !== documentId));
   }
 
+  const StatCard = ({ title, value, icon: Icon, description, buttonLink, buttonText }: { title: string, value: string | number, icon: React.ElementType, description: string, buttonLink?: string, buttonText?: string }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">{description}</p>
+            {buttonLink && buttonText &&
+                <Button size="sm" className="mt-2" asChild>
+                    <Link href={buttonLink}>{buttonText}</Link>
+                </Button>
+            }
+        </CardContent>
+    </Card>
+  );
+
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+           <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-96" />
+            </CardHeader>
+             <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Skeleton className="h-36" />
+                    <Skeleton className="h-36" />
+                    <Skeleton className="h-36" />
+                </div>
+            </CardContent>
+        </Card>
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+       </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -70,39 +113,26 @@ export default function RCStaffDashboardPage() {
             </CardHeader>
             <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
-                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Found Items</CardTitle>
-                            <PackagePlus className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{isLoading ? '...' : foundItems.length}</div>
-                            <p className="text-xs text-muted-foreground">items waiting for claim</p>
-                            <Button size="sm" className="mt-2" asChild>
-                                <Link href="/documents/report?status=found">Log New Found Item</Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending Claims</CardTitle>
-                            <Hand className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{isLoading ? '...' : pendingClaims.length}</div>
-                            <p className="text-xs text-muted-foreground">claims to review</p>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Handovers Today</CardTitle>
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">5</div>
-                            <p className="text-xs text-muted-foreground">items returned to owners</p>
-                        </CardContent>
-                    </Card>
+                     <StatCard 
+                        title="Found Items"
+                        value={foundItems.length}
+                        icon={PackagePlus}
+                        description="items waiting for claim"
+                        buttonLink="/documents/report?status=found"
+                        buttonText="Log New Found Item"
+                     />
+                     <StatCard 
+                        title="Pending Claims"
+                        value={pendingClaims.length}
+                        icon={Hand}
+                        description="claims to review"
+                     />
+                     <StatCard 
+                        title="Handovers Today"
+                        value={5}
+                        icon={Truck}
+                        description="items returned to owners"
+                     />
                 </div>
             </CardContent>
         </Card>
@@ -125,9 +155,7 @@ export default function RCStaffDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-                {isLoading ? (
-                    <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading claims...</TableCell></TableRow>
-                ) : pendingClaims.length === 0 ? (
+                {pendingClaims.length === 0 ? (
                     <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending claims.</TableCell></TableRow>
                 ) : (
                     pendingClaims.map(item => (
@@ -173,9 +201,7 @@ export default function RCStaffDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {isLoading ? (
-                            <TableRow><TableCell colSpan={4} className="h-24 text-center">Loading handovers...</TableCell></TableRow>
-                         ) : recentHandovers.length === 0 ? (
+                         {recentHandovers.length === 0 ? (
                             <TableRow><TableCell colSpan={4} className="h-24 text-center">No recent handovers.</TableCell></TableRow>
                          ) : (
                             recentHandovers.map(item => (
