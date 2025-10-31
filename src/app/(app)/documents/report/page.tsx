@@ -40,7 +40,9 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon, Upload } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import { MOCK_USER } from "@/lib/auth"
+import { getAuthenticatedUser } from "@/lib/auth"
+import type { User } from "@/lib/types"
+import { useEffect, useState } from "react"
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -55,6 +57,12 @@ const formSchema = z.object({
 
 export default function ReportDocumentPage() {
   const { toast } = useToast()
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    getAuthenticatedUser().then(setUser);
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,6 +74,10 @@ export default function ReportDocumentPage() {
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({variant: "destructive", title: "Authentication Error", description: "You must be logged in to submit a report."});
+        return;
+    }
     try {
         const response = await fetch(`http://localhost:5000/api/documents`, {
             method: 'POST',
@@ -74,9 +86,10 @@ export default function ReportDocumentPage() {
             },
             body: JSON.stringify({
                 ...values,
-                reportedBy: MOCK_USER.id, // In a real app, get the current user's ID
-                reportDate: new Date().toISOString().split('T')[0]
+                reportedBy: user.id, // Get current user's ID from session
+                reportDate: new Date().toISOString()
             }),
+            credentials: 'include',
         });
 
         if (!response.ok) {

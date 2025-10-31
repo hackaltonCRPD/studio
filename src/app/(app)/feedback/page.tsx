@@ -60,6 +60,7 @@ export default function FeedbackPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...values, userId: user.id }),
+            credentials: 'include',
         });
         if (!response.ok) throw new Error("Failed to submit feedback");
         

@@ -57,10 +57,12 @@ export default function SignupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
+        credentials: 'include', // Important: allows receiving cookies from the backend
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create account. Please try again.");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create account. Please try again.");
       }
 
       toast({

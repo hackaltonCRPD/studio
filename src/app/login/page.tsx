@@ -44,21 +44,24 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
+        credentials: 'include', // Important: sends cookies from the backend
       });
 
       if (!response.ok) {
-        throw new Error("Login failed. Please check your credentials.");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login failed. Please check your credentials.");
       }
 
-      // Assuming the backend returns a token or session cookie,
-      // which would be handled here in a real app.
+      // The backend sets an httpOnly cookie, so no token handling is needed on the client.
+      const user = await response.json();
       
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: `Welcome back, ${user.name}!`,
       });
 
       router.push("/dashboard");
+      router.refresh(); // This forces a refresh of the layout and fetches user data
 
     } catch (error: any) {
       console.error(error);

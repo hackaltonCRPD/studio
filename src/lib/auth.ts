@@ -1,36 +1,45 @@
 
 import type { User, UserRole } from "@/lib/types";
 
-// In a real app, you'd get this from a session or cookie.
-// We are hardcoding the user ID for demonstration purposes.
-const MOCK_USER_ID = "66a3ff152538183187c5364b"; // This should match an ID in your DB
+// The backend handles sessions via HTTP-only cookies.
+// This function checks if a user is authenticated by making a request to a profile endpoint.
 const API_URL = "http://localhost:5000/api";
 
-// This function is being phased out in favor of a proper session-based authentication.
-// For now, we return a mock user to avoid breaking components that still rely on it.
 export async function getAuthenticatedUser(): Promise<User | null> {
-  // In a real application, you would fetch this data based on a session token.
-  // For now, we return the MOCK_USER to keep the UI functional during transition.
   try {
-    const response = await fetch(`${API_URL}/users/${MOCK_USER_ID}`);
+    // The browser will automatically send the session cookie.
+    const response = await fetch(`${API_URL}/auth/profile`, {
+        // 'include' is necessary to send cookies to a different origin
+        credentials: 'include', 
+    });
+
     if (!response.ok) {
-      console.error("Authentication failed: Could not fetch user.", response.statusText);
-      return MOCK_USER; // Fallback to mock user
+      // This happens if the cookie is invalid, expired, or not present.
+      // It's an expected case for non-authenticated users.
+      if (response.status === 401) {
+        return null;
+      }
+      // For other errors (like 500), we log it but still treat as unauthenticated.
+      console.error("Authentication check failed:", response.statusText);
+      return null;
     }
+
     const user = await response.json();
-    return {...user, id: user._id.toString()};
+    // The backend might return _id, so we map it to id.
+    return { ...user, id: user._id.toString() };
   } catch (error) {
-    console.error("Error during authentication:", error);
-    // In case of a network error or if the backend is down, return the mock user.
-    return MOCK_USER;
+    // This could be a network error or if the backend is down.
+    console.error("Error checking authentication status:", error);
+    return null;
   }
 }
+
 
 export function hasPermission(userRole: UserRole, allowedRoles: UserRole[]): boolean {
     return allowedRoles.includes(userRole);
 }
 
-// Keep MOCK_USER for components that might still be using it temporarily or for offline testing
+// MOCK_USER is no longer needed for authentication but can be kept for testing if required.
 export const MOCK_USER: User = {
   id: "66a3ff152538183187c5364b",
   name: "Admin User",
@@ -39,4 +48,6 @@ export const MOCK_USER: User = {
   role: "admin",
   status: 'active',
   credibilityScore: 95,
+  phoneNumber: "111-222-3333",
 };
+
