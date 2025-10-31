@@ -13,6 +13,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/icons"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 
 
@@ -26,6 +33,7 @@ const formSchema = z.object({
   password: z.string().min(6, {
     message: "Password must be at least 6 characters.",
   }),
+  role: z.enum(["reporter", "finder"]),
 });
 
 
@@ -39,15 +47,16 @@ export default function SignupPage() {
       name: "",
       email: "",
       password: "",
+      role: "reporter",
     },
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch(`http://localhost:5000/api/users`, {
+      const response = await fetch(`http://localhost:5000/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, role: 'reporter' }),
+        body: JSON.stringify(values),
       });
 
       if (!response.ok) {
@@ -128,6 +137,27 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
+                <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                        <FormItem className="grid gap-2">
+                        <FormLabel>I am a...</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="reporter" className="capitalize">Reporter (I lost something)</SelectItem>
+                                <SelectItem value="finder" className="capitalize">Finder (I found something)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
               <Button type="submit" className="w-full">
                 Create an account
               </Button>
