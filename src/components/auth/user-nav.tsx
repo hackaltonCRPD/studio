@@ -1,3 +1,4 @@
+
 "use client";
 import {
   Avatar,
@@ -14,16 +15,41 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { logoutUser } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export function UserNav({ user }: { user: User | null }) {
+  const { toast } = useToast();
+  const router = useRouter();
+
   const getInitials = (name: string) => {
+    if (!name) return "";
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
 
   if (!user) {
     return null;
+  }
+
+  const handleLogout = async () => {
+    const success = await logoutUser();
+    if (success) {
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      router.push("/login");
+      router.refresh(); // Force a refresh to clear all state
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Logout Failed",
+        description: "Could not log you out. Please try again.",
+      });
+    }
   }
 
   return (
@@ -55,8 +81,8 @@ export function UserNav({ user }: { user: User | null }) {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">Log out</Link>
+        <DropdownMenuItem onClick={handleLogout}>
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -21,7 +21,8 @@ export async function getUsers(filters?: { status?: UserStatus | 'all', role?: U
       return [];
     }
     const result = await response.json();
-    return result.data.map((user: any) => ({...user, id: user._id.toString(), createdAt: user.createdAt}));
+    // Backend sends { data: [User] }, and users have both id and _id.
+    return result.data.map((user: any) => ({...user, id: user.id || user._id.toString()}));
   } catch (error) {
     console.error("Error fetching users:", error);
     return [];
@@ -37,7 +38,7 @@ export async function getUserById(id: string): Promise<User | null> {
       return null;
     }
     const user = await response.json();
-    return {...user, id: user._id.toString(), createdAt: user.createdAt};
+    return {...user, id: user.id || user._id.toString()};
   } catch (error) {
     console.error(`Error fetching user ${id}:`, error);
     return null;
@@ -64,7 +65,13 @@ export async function getDocuments(filters?: { documentType?: string, location?:
       return [];
     }
     const result = await response.json();
-    return result.data.map((doc: any) => ({...doc, id: doc._id.toString(), reportedBy: doc.reportedBy?._id || doc.reportedBy }));
+    // Backend sends { data: [Document] }
+    return result.data.map((doc: any) => ({
+        ...doc, 
+        id: doc.id || doc._id.toString(), 
+        // Ensure reportedBy is a string ID
+        reportedBy: doc.reportedBy?._id || doc.reportedBy?.id || doc.reportedBy 
+    }));
   } catch (error) {
     console.error("Error fetching documents:", error);
     return [];
@@ -80,7 +87,12 @@ export async function getDocumentById(id: string): Promise<DocumentReport | null
         return null;
     }
     const doc = await response.json();
-    return {...doc, id: doc._id.toString(), reportedBy: doc.reportedBy?._id || doc.reportedBy };
+    return {
+        ...doc, 
+        id: doc.id || doc._id.toString(),
+        // Ensure reportedBy is a string ID, from a potentially populated object
+        reportedBy: doc.reportedBy?._id || doc.reportedBy?.id || doc.reportedBy
+    };
   } catch (error) {
     console.error(`Error fetching document ${id}:`, error);
     return null;
@@ -101,7 +113,8 @@ export async function getFeedbacks(status?: "open" | "resolved" | "all"): Promis
             return [];
         }
         const result = await response.json();
-        return result.data.map((item: any) => ({...item, id: item._id.toString()}));
+        // Backend sends { data: [...] }
+        return result.data.map((item: any) => ({...item, id: item.id || item._id.toString()}));
     } catch(error) {
         console.error("Error fetching feedback:", error);
         return [];
@@ -120,7 +133,8 @@ export async function getEnquiries(status?: "open" | "resolved" | "all"): Promis
             return [];
         }
         const result = await response.json();
-        return result.data.map((item: any) => ({...item, id: item._id.toString()}));
+        // Backend sends { data: [...] }
+        return result.data.map((item: any) => ({...item, id: item.id || item._id.toString()}));
     } catch(error) {
         console.error("Error fetching enquiries:", error);
         return [];
@@ -137,7 +151,8 @@ export async function getActivityLogsForUser(userId: string): Promise<ActivityLo
             return [];
         }
         const result = await response.json();
-        return result.map((item: any) => ({...item, id: item._id.toString()}));
+        // Backend sends a plain array
+        return result.map((item: any) => ({...item, id: item.id || item._id.toString()}));
     } catch(error) {
         console.error(`Error fetching activity logs for user ${userId}:`, error);
         return [];
@@ -153,7 +168,8 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
             return [];
         }
         const result = await response.json();
-        return result.map((item: any) => ({...item, id: item._id.toString()}));
+        // Backend sends a plain array
+        return result.map((item: any) => ({...item, id: item.id || item._id.toString()}));
     } catch(error) {
         console.error(`Error fetching notifications for user ${userId}:`, error);
         return [];
