@@ -21,6 +21,7 @@ import type { User, UserStatus } from "@/lib/types";
 import { ArrowLeft, Edit, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 
 export default function UserDetailsPage({ params }: { params: { id: string } }) {
@@ -142,7 +143,7 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                             </div>
                             <div>
                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Member Since</h3>
-                                <p className="text-sm">July 10, 2024</p>
+                                <p className="text-sm">{format(new Date(user.createdAt), "PPP")}</p>
                             </div>
                         </div>
                     </div>

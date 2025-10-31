@@ -21,7 +21,7 @@ export async function getUsers(filters?: { status?: UserStatus | 'all', role?: U
       return [];
     }
     const result = await response.json();
-    return result.data.map((user: any) => ({...user, id: user._id.toString()}));
+    return result.data.map((user: any) => ({...user, id: user._id.toString(), createdAt: user.createdAt}));
   } catch (error) {
     console.error("Error fetching users:", error);
     return [];
@@ -37,7 +37,7 @@ export async function getUserById(id: string): Promise<User | null> {
       return null;
     }
     const user = await response.json();
-    return {...user, id: user._id.toString()};
+    return {...user, id: user._id.toString(), createdAt: user.createdAt};
   } catch (error) {
     console.error(`Error fetching user ${id}:`, error);
     return null;
@@ -64,7 +64,7 @@ export async function getDocuments(filters?: { documentType?: string, location?:
       return [];
     }
     const result = await response.json();
-    return result.data.map((doc: any) => ({...doc, id: doc._id.toString(), reportedBy: doc.reportedBy._id || doc.reportedBy }));
+    return result.data.map((doc: any) => ({...doc, id: doc._id.toString(), reportedBy: doc.reportedBy?._id || doc.reportedBy }));
   } catch (error) {
     console.error("Error fetching documents:", error);
     return [];
@@ -80,7 +80,7 @@ export async function getDocumentById(id: string): Promise<DocumentReport | null
         return null;
     }
     const doc = await response.json();
-    return {...doc, id: doc._id.toString(), reportedBy: doc.reportedBy._id || doc.reportedBy };
+    return {...doc, id: doc._id.toString(), reportedBy: doc.reportedBy?._id || doc.reportedBy };
   } catch (error) {
     console.error(`Error fetching document ${id}:`, error);
     return null;

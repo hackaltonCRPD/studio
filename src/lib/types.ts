@@ -7,11 +7,12 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl?: string;
   role: UserRole;
   status: UserStatus;
   credibilityScore: number;
   phoneNumber?: string;
+  createdAt: string;
 };
 
 export type DocumentReport = {

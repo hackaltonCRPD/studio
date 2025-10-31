@@ -53,6 +53,16 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            phoneNumber: "",
+            role: "reporter",
+        },
+    });
+
     useEffect(() => {
         async function fetchData() {
             setIsLoading(true);
@@ -74,17 +84,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
             }
         }
         fetchData();
-    }, [params.id]);
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: "",
-            email: "",
-            phoneNumber: "",
-            role: "reporter",
-        },
-    });
+    }, [params.id, form]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {

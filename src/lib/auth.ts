@@ -26,7 +26,7 @@ export async function getAuthenticatedUser(): Promise<User | null> {
 
     const user = await response.json();
     // The backend might return _id, so we map it to id.
-    return { ...user, id: user._id.toString() };
+    return { ...user, id: user._id.toString(), createdAt: user.createdAt };
   } catch (error) {
     // This could be a network error or if the backend is down.
     console.error("Error checking authentication status:", error);
@@ -49,5 +49,5 @@ export const MOCK_USER: User = {
   status: 'active',
   credibilityScore: 95,
   phoneNumber: "111-222-3333",
+  createdAt: new Date().toISOString(),
 };
-
