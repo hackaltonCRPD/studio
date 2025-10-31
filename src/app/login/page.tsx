@@ -53,6 +53,7 @@ export default function LoginPage() {
       }
 
       const { user } = await response.json();
+      console.log(user);
       
       toast({
         title: "Login Successful",
