@@ -52,8 +52,7 @@ export default function LoginPage() {
         throw new Error(errorData.message || "Login failed. Please check your credentials.");
       }
 
-      const { user } = await response.json();
-      console.log(user);
+      const user = await response.json();
       
       toast({
         title: "Login Successful",
