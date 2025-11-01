@@ -33,13 +33,13 @@ export default function LoginPage() {
         credentials: 'include',
       });
   
-      const data = await response.json();
+      const {user, token} = await response.json();
   
       if (!response.ok) {
-        throw new Error(data.message || "Login failed. Please check your credentials.");
+        throw new Error( "Login failed. Please check your credentials.");
       }
       
-      const user = data.user;
+      // const user = data.user;
   
       toast({
         title: "Login Successful",
