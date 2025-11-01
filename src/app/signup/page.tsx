@@ -10,7 +10,6 @@ import * as z from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/icons"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import {
@@ -64,13 +63,33 @@ export default function SignupPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to create account. Please try again.");
       }
+      
+      const user = await response.json();
 
       toast({
         title: "Account Created",
-        description: "Your account has been successfully created. Please log in.",
+        description: `Welcome, ${user.name}! Your account is ready.`,
       });
 
-      router.push("/login");
+      let dashboardUrl = "/dashboard";
+      switch(user.role) {
+        case "rc_staff":
+          dashboardUrl = "/rc-staff/dashboard";
+          break;
+        case "police":
+          dashboardUrl = "/police/dashboard";
+          break;
+        case "admin":
+          dashboardUrl = "/dashboard";
+          break;
+        default:
+          dashboardUrl = "/dashboard";
+          break;
+      }
+      
+      router.push(dashboardUrl);
+      router.refresh();
+
 
     } catch (error: any) {
       console.error(error);
