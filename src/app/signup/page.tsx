@@ -45,7 +45,8 @@ export default function SignupPage() {
         throw new Error(errorData.message || "Failed to create account. Please try again.");
       }
       
-      const user = await response.json();
+      const data = await response.json();
+      const user = data.user;
 
       toast({
         title: "Account Created",

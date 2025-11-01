@@ -39,7 +39,7 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed. Please check your credentials.");
       }
       
-      const user = data;
+      const user = data.user;
   
       toast({
         title: "Login Successful",
