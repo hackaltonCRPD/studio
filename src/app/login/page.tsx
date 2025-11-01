@@ -4,63 +4,50 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/icons"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-
-
-const formSchema = z.object({
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(1, {
-    message: "Password is required.",
-  }),
-});
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-        credentials: 'include', // Important: sends cookies from the backend
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
-
+  
+      const data = await response.json();
+  
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed. Please check your credentials.");
+        throw new Error(data.message || "Login failed. Please check your credentials.");
       }
-
-      const user = await response.json();
       
+      const user = data;
+  
       toast({
         title: "Login Successful",
         description: `Welcome back, ${user.name}!`,
       });
-
+  
       let dashboardUrl = "/dashboard";
-      switch(user.role) {
+      switch (user.role) {
         case "rc_staff":
           dashboardUrl = "/rc-staff/dashboard";
           break;
@@ -68,13 +55,13 @@ export default function LoginPage() {
           dashboardUrl = "/police/dashboard";
           break;
         case "admin":
-          dashboardUrl = "/dashboard";
+          dashboardUrl = "/dashboard"; // Admin can use the main dashboard
           break;
         default:
           dashboardUrl = "/dashboard";
           break;
       }
-      
+  
       router.push(dashboardUrl);
       router.refresh();
 
@@ -85,9 +72,11 @@ export default function LoginPage() {
         title: "Login Failed",
         description: error.message || "There was a problem logging in.",
       });
+    } finally {
+        setIsLoading(false);
     }
   }
-
+  
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
@@ -104,50 +93,47 @@ export default function LoginPage() {
               Enter your email below to login to your account
             </p>
           </div>
-           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-               <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="grid gap-2">
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                   <FormItem className="grid gap-2">
-                     <div className="flex items-center">
-                        <FormLabel>Password</FormLabel>
-                        <Link
-                        href="#"
-                        className="ml-auto inline-block text-sm underline"
-                        >
-                        Forgot your password?
-                        </Link>
-                    </div>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full">
-                Login
+            <form onSubmit={handleSubmit} className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="m@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+               <div className="grid gap-2">
+                 <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                    href="#"
+                    className="ml-auto inline-block text-sm underline"
+                    >
+                    Forgot your password?
+                    </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" disabled={isLoading}>
                 Login with Google
               </Button>
             </form>
-          </Form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="underline">
