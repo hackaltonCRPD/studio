@@ -11,8 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/icons"
 import { useToast } from "@/hooks/use-toast"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
 
 export default function LoginPage() {
   const { toast } = useToast();
@@ -33,13 +31,13 @@ export default function LoginPage() {
         credentials: 'include',
       });
   
-      const {user, token} = await response.json();
+      const data = await response.json();
   
       if (!response.ok) {
         throw new Error( "Login failed. Please check your credentials.");
       }
       
-      // const user = data.user;
+      const user = data.user;
   
       toast({
         title: "Login Successful",
@@ -55,7 +53,7 @@ export default function LoginPage() {
           dashboardUrl = "/police/dashboard";
           break;
         case "admin":
-          dashboardUrl = "/dashboard"; // Admin can use the main dashboard
+          dashboardUrl = "/dashboard";
           break;
         default:
           dashboardUrl = "/dashboard";
@@ -63,7 +61,6 @@ export default function LoginPage() {
       }
   
       router.push(dashboardUrl);
-      router.refresh();
 
     } catch (error: any) {
       console.error(error);

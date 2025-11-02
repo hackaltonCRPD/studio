@@ -70,8 +70,6 @@ export default function SignupPage() {
       }
       
       router.push(dashboardUrl);
-      router.refresh();
-
 
     } catch (error: any) {
       console.error(error);
