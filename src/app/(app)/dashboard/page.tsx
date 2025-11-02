@@ -1,8 +1,4 @@
 
-
-"use client";
-
-import { useEffect, useState } from "react";
 import {
   Activity,
   CreditCard,
@@ -31,76 +27,34 @@ import { Badge } from "@/components/ui/badge";
 import { getDocuments, getUsers } from "@/lib/data";
 import { getAuthenticatedUser } from "@/lib/auth";
 import type { DocumentReport, User } from "@/lib/types";
-import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
+import { redirect } from "next/navigation";
 
-export default function Dashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [documents, setDocuments] = useState<DocumentReport[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const authUser = await getAuthenticatedUser();
-        if (!authUser) {
-          router.replace('/login');
-          return;
-        }
-        setUser(authUser);
-
-        if (authUser.role === 'rc_staff') {
-          router.replace('/rc-staff/dashboard');
-          return;
-        }
-        if (authUser.role === 'police') {
-          router.replace('/police/dashboard');
-          return;
-        }
-
-        const [docs, allUsers] = await Promise.all([
-          getDocuments(),
-          authUser.role === 'admin' ? getUsers() : Promise.resolve([])
-        ]);
-        setDocuments(docs);
-        if (allUsers) {
-          setUsers(allUsers);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        // Optionally, redirect to login or show an error message
-        // For now, we'll just stop loading.
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [router]);
-
-  if (isLoading || !user) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-        </div>
-        <Skeleton className="h-96" />
-      </div>
-    );
+export default async function Dashboard() {
+  const user = await getAuthenticatedUser();
+  
+  if (!user) {
+    redirect('/login');
   }
+
+  if (user.role === 'rc_staff') {
+    redirect('/rc-staff/dashboard');
+  }
+  if (user.role === 'police') {
+    redirect('/police/dashboard');
+  }
+
+  const [documents, allUsers] = await Promise.all([
+    getDocuments(),
+    user.role === 'admin' ? getUsers() : Promise.resolve([])
+  ]);
 
   const recentReports = documents.slice(0, 5);
   const isAdmin = user.role === 'admin';
 
   if (isAdmin) {
-    const activeUsers = users.filter(u => u.status === 'active').length;
-    const avgCredibility = users.length > 0 
-        ? Math.round(users.reduce((acc, u) => acc + u.credibilityScore, 0) / users.length) 
+    const activeUsers = allUsers.filter(u => u.status === 'active').length;
+    const avgCredibility = allUsers.length > 0 
+        ? Math.round(allUsers.reduce((acc, u) => acc + u.credibilityScore, 0) / allUsers.length) 
         : 0;
 
     return (
@@ -113,7 +67,7 @@ export default function Dashboard() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{users.length}</div>
+                    <div className="text-2xl font-bold">{allUsers.length}</div>
                     <p className="text-xs text-muted-foreground">+5 since last month</p>
                     </CardContent>
                 </Card>
@@ -126,7 +80,7 @@ export default function Dashboard() {
                     </CardHeader>
                     <CardContent>
                     <div className="text-2xl font-bold">{activeUsers}</div>
-                     <p className="text-xs text-muted-foreground">{users.length > 0 ? `${Math.round((activeUsers / users.length) * 100)}% of total users` : 'N/A'}</p>
+                     <p className="text-xs text-muted-foreground">{allUsers.length > 0 ? `${Math.round((activeUsers / allUsers.length) * 100)}% of total users` : 'N/A'}</p>
                     </CardContent>
                 </Card>
                 </Link>

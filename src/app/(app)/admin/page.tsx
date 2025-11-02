@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import {
@@ -40,71 +39,52 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUsers } from "@/lib/data";
-import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function AdminPage() {
-  const [initialUsers, setInitialUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    getUsers().then(users => {
-      setInitialUsers(users);
-      setIsLoading(false);
-    });
-  }, []);
-
-  if (isLoading) {
+    // This is now a client component that wraps the server-fetched table
     return (
         <Card>
             <CardHeader>
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-64" />
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                View, manage, and edit all users in the system.
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                </div>
+                <UserTable />
             </CardContent>
         </Card>
     )
-  }
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Management</CardTitle>
-        <CardDescription>
-          View, manage, and edit all users in the system.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <UserTable initialUsers={initialUsers} />
-      </CardContent>
-    </Card>
-  )
 }
 
-
-function UserTable({ initialUsers }: { initialUsers: User[] }) {
+function UserTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [users, setUsers] = useState<User[]>(initialUsers);
   const { toast } = useToast();
   
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [credibilityFilter, setCredibilityFilter] = useState<[number, number]>([0, 100]);
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">(searchParams.get('status') as UserStatus | 'all' || "all");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">(searchParams.get('role') as UserRole | 'all' || "all");
 
   useEffect(() => {
-    setUsers(initialUsers);
-  }, [initialUsers]);
+    setIsLoading(true);
+    getUsers({
+      status: searchParams.get('status') as UserStatus | 'all' || 'all',
+      role: searchParams.get('role') as UserRole | 'all' || 'all',
+    }).then(fetchedUsers => {
+      setUsers(fetchedUsers);
+      setIsLoading(false);
+    });
+  }, [searchParams]);
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const credibilityMatch = user.credibilityScore >= credibilityFilter[0] && user.credibilityScore <= credibilityFilter[1];
+      // Status and Role are now filtered by the API call, but we keep this for client-side adjustments if needed.
       const statusMatch = statusFilter === "all" || user.status === statusFilter;
       const roleMatch = roleFilter === "all" || user.role === roleFilter;
       return credibilityMatch && statusMatch && roleMatch;
@@ -162,17 +142,12 @@ function UserTable({ initialUsers }: { initialUsers: User[] }) {
   const userRoles: UserRole[] = ["admin", "rc_staff", "police", "reporter", "finder"];
   const userStatuses: UserStatus[] = ["active", "suspended", "archived"];
   
-  const handleFilterChange = () => {
+  const handleFilterChange = (filter: 'status' | 'role', value: string) => {
     const params = new URLSearchParams(searchParams);
-    if (statusFilter !== 'all') {
-      params.set('status', statusFilter);
+    if (value !== 'all') {
+      params.set(filter, value);
     } else {
-      params.delete('status');
-    }
-    if (roleFilter !== 'all') {
-      params.set('role', roleFilter);
-    } else {
-      params.delete('role');
+      params.delete(filter);
     }
     router.push(`/admin?${params.toString()}`);
   };
@@ -188,7 +163,57 @@ function UserTable({ initialUsers }: { initialUsers: User[] }) {
             <TableHead>Email</TableHead>
             <TableHead className="w-[250px]">Credibility / Fraud Risk</TableHead>
             <TableHead>
-            <span className="sr-only">Actions</span>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8">
+                            <SlidersHorizontal className="mr-2 h-4 w-4" />
+                            Filters
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="end">
+                       <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Filters</h4>
+                            <p className="text-sm text-muted-foreground">Adjust filters to refine results.</p>
+                        </div>
+                        <div className="grid gap-2">
+                             <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="role">Role</Label>
+                                <Select defaultValue={roleFilter} onValueChange={(value) => handleFilterChange('role', value)}>
+                                    <SelectTrigger id="role" className="col-span-2 h-8">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Roles</SelectItem>
+                                        {userRoles.map(role => <SelectItem key={role} value={role} className="capitalize">{role.replace('_', ' ')}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                             <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="status">Status</Label>
+                                <Select defaultValue={statusFilter} onValueChange={(value) => handleFilterChange('status', value)}>
+                                    <SelectTrigger id="status" className="col-span-2 h-8">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        {userStatuses.map(status => <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                             <div className="grid grid-cols-1 items-center gap-4">
+                                <Label>Credibility Range: {credibilityFilter[0]}% - {credibilityFilter[1]}%</Label>
+                                <Slider
+                                    defaultValue={[0, 100]}
+                                    max={100}
+                                    step={1}
+                                    onValueChange={setCredibilityFilter}
+                                />
+                            </div>
+                        </div>
+                       </div>
+                    </PopoverContent>
+                </Popover>
             </TableHead>
         </TableRow>
         </TableHeader>
