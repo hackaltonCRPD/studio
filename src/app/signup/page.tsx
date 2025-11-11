@@ -8,7 +8,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Logo } from "@/components/icons"
+import { Logo } from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 
 export default function SignupPage() {
@@ -27,6 +28,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("reporter");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [preferredContactMethod, setPreferredContactMethod] = useState<"email" | "phone">("email");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -36,8 +39,7 @@ export default function SignupPage() {
       const response = await fetch(`http://localhost:5000/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
-        credentials: 'include', 
+        body: JSON.stringify({ name, email, password, role, phoneNumber, preferredContactMethod }),
       });
 
       if (!response.ok) {
@@ -87,7 +89,7 @@ export default function SignupPage() {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[350px] gap-6">
+        <div className="mx-auto grid w-[400px] gap-6">
           <div className="grid gap-2 text-center">
              <div className="flex items-center justify-center gap-2 text-2xl font-bold">
               <Logo className="h-7 w-7 text-primary" />
@@ -123,6 +125,17 @@ export default function SignupPage() {
                 disabled={isLoading}
               />
             </div>
+             <div className="grid gap-2">
+              <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                placeholder="e.g. +1 234 567 890"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -150,6 +163,25 @@ export default function SignupPage() {
                   <SelectItem value="finder">Finder (I found something)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+             <div className="grid gap-2">
+                <Label>Preferred Contact Method</Label>
+                <RadioGroup
+                    defaultValue="email"
+                    className="flex gap-4"
+                    value={preferredContactMethod}
+                    onValueChange={(value: "email" | "phone") => setPreferredContactMethod(value)}
+                    disabled={isLoading}
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="email" id="r-email" />
+                        <Label htmlFor="r-email">Email</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="phone" id="r-phone" />
+                        <Label htmlFor="r-phone">Phone</Label>
+                    </div>
+                </RadioGroup>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating Account..." : "Create an account"}

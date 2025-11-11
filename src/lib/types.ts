@@ -13,6 +13,7 @@ export type User = {
   credibilityScore: number;
   phoneNumber?: string;
   createdAt: string;
+  preferredContactMethod?: "email" | "phone";
 };
 
 export type DocumentReport = {

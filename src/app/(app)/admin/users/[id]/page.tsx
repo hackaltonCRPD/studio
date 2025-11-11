@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import {
@@ -18,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import type { User, UserStatus } from "@/lib/types";
-import { ArrowLeft, Edit, FileText } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Mail, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -144,6 +143,13 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                             <div>
                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Member Since</h3>
                                 <p className="text-sm">{format(new Date(user.createdAt), "PPP")}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Preferred Contact Method</h3>
+                                <div className="flex items-center gap-2 text-sm">
+                                    {user.preferredContactMethod === "email" ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                                    <span className="capitalize">{user.preferredContactMethod || "Not set"}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

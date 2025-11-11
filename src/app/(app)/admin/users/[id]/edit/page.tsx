@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import {
@@ -38,12 +37,14 @@ import Link from "next/link";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   phoneNumber: z.string().optional(),
   role: z.enum(["reporter", "finder", "rc_staff", "police", "admin"]),
+  preferredContactMethod: z.enum(["email", "phone"]).optional(),
 });
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
@@ -60,6 +61,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
             email: "",
             phoneNumber: "",
             role: "reporter",
+            preferredContactMethod: "email",
         },
     });
 
@@ -80,6 +82,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                     email: userToEdit.email,
                     phoneNumber: userToEdit.phoneNumber || "",
                     role: userToEdit.role,
+                    preferredContactMethod: userToEdit.preferredContactMethod || "email",
                 });
             }
         }
@@ -100,7 +103,6 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                 description: `${values.name}'s profile has been successfully updated.`,
             });
             router.push("/admin");
-            router.refresh();
         } catch (error) {
             console.error(error);
              toast({
@@ -192,6 +194,36 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                     ))}
                                     </SelectContent>
                                 </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="preferredContactMethod"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>Preferred Contact Method</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-row space-x-4"
+                                    >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="email" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Email</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="phone" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Phone</FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
