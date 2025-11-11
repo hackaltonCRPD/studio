@@ -18,19 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, File, Eye } from "lucide-react";
+import { MoreHorizontal, File, Eye, Hand } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -42,10 +35,19 @@ import {
 import type { DocumentReport } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function SearchDocumentsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
     
     const [documents, setDocuments] = useState<DocumentReport[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -77,25 +79,16 @@ export default function SearchDocumentsPage() {
     
     const params = new URLSearchParams(searchParams);
     if (value && value !== 'all') {
-        if (filterName === 'location') {
-            params.set('q', value);
-        } else {
-            params.set(filterName, value);
-        }
+        const queryParam = filterName === 'location' ? 'q' : filterName;
+        params.set(queryParam, value);
     } else {
-        if (filterName === 'location') {
-            params.delete('q');
-        } else {
-            params.delete(filterName);
-        }
+        const queryParam = filterName === 'location' ? 'q' : filterName;
+        params.delete(queryParam);
     }
     router.push(`/documents/search?${params.toString()}`);
   };
 
-  const documentTypes = useMemo(() => {
-    // In a real app, this would likely come from an API or a config file
-    return ["Passport", "Driver's License", "National ID", "Student ID", "Credit Card", "Other"];
-  }, []);
+  const documentTypes = ["Passport", "Driver's License", "National ID", "Student ID", "Credit Card", "Other"];
 
     const getStatusVariant = (status: "lost" | "found" | "claimed") => {
         switch (status) {
@@ -110,16 +103,50 @@ export default function SearchDocumentsPage() {
         }
     }
 
+    const handleClaim = async (docId: string) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/documents/${docId}/claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to claim document.');
+            }
+            
+            // Optimistically update the UI
+            setDocuments(documents.filter(doc => doc.id !== docId));
+
+            toast({
+                title: 'Claim Initiated',
+                description: 'RC Staff has been notified. They will review your claim.',
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Claim Failed',
+                description: error.message,
+            });
+        }
+    };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Search Documents</CardTitle>
         <CardDescription>
-          Browse and search through all reported documents.
+          Browse and search through all reported documents. Use the filters to find a match.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <Input
+            placeholder="Search by location, description, etc..."
+            value={filters.location}
+            onChange={(e) => handleFilterChange("location", e.target.value)}
+            className="w-full sm:max-w-sm"
+          />
           <Select value={filters.documentType} onValueChange={(value) => handleFilterChange("documentType", value)}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Document Type" />
@@ -131,12 +158,7 @@ export default function SearchDocumentsPage() {
               ))}
             </SelectContent>
           </Select>
-          <Input
-            placeholder="Filter by location..."
-            value={filters.location}
-            onChange={(e) => handleFilterChange("location", e.target.value)}
-            className="w-full sm:max-w-sm"
-          />
+          
           <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Status" />
@@ -167,7 +189,7 @@ export default function SearchDocumentsPage() {
                 <TableHead>Location</TableHead>
                 <TableHead className="hidden md:table-cell">Date Reported</TableHead>
                 <TableHead>
-                    <span className="sr-only">Actions</span>
+                    Actions
                 </TableHead>
                 </TableRow>
             </TableHeader>
@@ -199,26 +221,29 @@ export default function SearchDocumentsPage() {
                     <TableCell>{doc.location}</TableCell>
                     <TableCell className="hidden md:table-cell">{new Date(doc.reportDate).toLocaleDateString()}</TableCell>
                     <TableCell>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                            <Link href={`/documents/${doc.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                            </Link>
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        {doc.status === 'found' ? (
+                            <Button size="sm" onClick={() => handleClaim(doc.id)}>
+                                <Hand className="mr-2 h-4 w-4" />
+                                Claim
+                            </Button>
+                        ) : (
+                             <Button size="sm" variant="outline" asChild>
+                                <Link href={`/documents/${doc.id}`}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                </Link>
+                            </Button>
+                        )}
                     </TableCell>
                 </TableRow>
                 ))}
+                {documents.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                            No documents found matching your criteria.
+                        </TableCell>
+                    </TableRow>
+                )}
             </TableBody>
             </Table>
         )}

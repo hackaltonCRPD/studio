@@ -16,12 +16,13 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone, Hand } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import type { DocumentReport, User as UserType } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
   const [document, setDocument] = useState<DocumentReport | null>(null);
@@ -29,6 +30,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -65,7 +67,9 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
 
   const isAdmin = currentUser.role === 'admin';
   const isPolice = currentUser.role === 'police';
-  const canEdit = isAdmin || currentUser.id === document.reportedBy;
+  const isOwner = currentUser.id === document.reportedBy;
+  const canEdit = isAdmin || isOwner;
+  const canClaim = document.status === 'found' && !isOwner;
 
   const getStatusVariant = (status: "lost" | "found" | "claimed") => {
     switch (status) {
@@ -86,6 +90,35 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
     if (isAdmin || isPolice) return true;
     return false;
   }
+  
+  const handleClaim = async () => {
+    try {
+        const response = await fetch(`http://localhost:5000/api/documents/${document.id}/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to claim document.');
+        }
+        
+        toast({
+            title: 'Claim Initiated',
+            description: 'RC Staff has been notified. They will review your claim.',
+        });
+        
+        // Optimistically update the status on the page
+        setDocument({ ...document, status: 'claimed' });
+        
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Claim Failed',
+            description: error.message,
+        });
+    }
+};
 
   return (
     <div className="space-y-6">
@@ -100,16 +133,22 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                 {document.documentType}
             </h1>
             <Badge variant={getStatusVariant(document.status)} className="ml-auto sm:ml-0 capitalize">{document.status}</Badge>
-             {canEdit && (
-                <div className="hidden items-center gap-2 md:ml-auto md:flex">
+             <div className="hidden items-center gap-2 md:ml-auto md:flex">
+                {canEdit && (
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/documents/${document.id}/edit`}>
                             <Edit className="h-4 w-4" />
                             Edit
                         </Link>
                     </Button>
-                </div>
-            )}
+                )}
+                 {canClaim && (
+                    <Button size="sm" onClick={handleClaim}>
+                        <Hand className="mr-2 h-4 w-4" />
+                        Claim This Item
+                    </Button>
+                )}
+            </div>
         </div>
         <Card>
             <CardHeader>
