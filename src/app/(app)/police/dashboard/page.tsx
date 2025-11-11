@@ -1,7 +1,4 @@
 
-
-"use client";
-
 import {
   Card,
   CardContent,
@@ -22,62 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Check, ShieldAlert, X } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { DocumentReport } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PoliceDashboardClient } from "./police-dashboard-client";
 
-export default function PoliceDashboardPage() {
-  const [escalatedCases, setEscalatedCases] = useState<(DocumentReport & { escalationReason: string })[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchEscalated = async () => {
-        setIsLoading(true);
-        // In a real app, you'd fetch only escalated cases.
-        // We'll mock this by filtering for "found" and adding a reason.
-        try {
-          const docs = await getDocuments({ status: "found" });
-          const mockEscalated = docs.slice(0,3).map(d => ({...d, escalationReason: "Multiple claims"}));
-          setEscalatedCases(mockEscalated);
-        } catch (error) {
-          console.error("Failed to fetch escalated cases", error);
-        }
-        setIsLoading(false);
-    }
-    fetchEscalated();
-  }, []);
-
-  const handleClaimAction = async (documentId: string, action: 'approve' | 'deny') => {
-      // In a real app, this would call an API endpoint to approve/deny the claim.
-      console.log(`Claim for doc ${documentId} was ${action}d.`);
-      // Optimistically remove from list
-      setEscalatedCases(escalatedCases.filter(c => c.id !== documentId));
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-8 w-56" />
-                <Skeleton className="h-4 w-80" />
-            </CardHeader>
-        </Card>
-        <Card>
-            <CardHeader>
-                <div className="flex items-center gap-2">
-                    <ShieldAlert className="h-6 w-6 text-destructive" />
-                    <Skeleton className="h-8 w-48" />
-                </div>
-                <Skeleton className="h-4 w-96" />
-            </CardHeader>
-            <CardContent>
-                <Skeleton className="h-48 w-full" />
-            </CardContent>
-        </Card>
-    </div>
-    )
-  }
+export default async function PoliceDashboardPage() {
+  
+  // In a real app, you'd fetch only escalated cases.
+  // We'll mock this by filtering for "found" and adding a reason.
+  const docs = await getDocuments({ status: "found" });
+  const mockEscalated = docs.slice(0,3).map(d => ({...d, escalationReason: "Multiple claims"}));
 
   return (
      <div className="space-y-6">
@@ -100,48 +49,7 @@ export default function PoliceDashboardPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead>Document ID</TableHead>
-                        <TableHead>Document Type</TableHead>
-                        <TableHead>Reason for Escalation</TableHead>
-                        <TableHead>Date Reported</TableHead>
-                        <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {escalatedCases.length === 0 ? (
-                           <TableRow><TableCell colSpan={5} className="h-24 text-center">No escalated cases.</TableCell></TableRow>
-                        ) : (
-                            escalatedCases.map((item) => (
-                            <TableRow key={item.id}>
-                                <TableCell>
-                                    <Link href={`/documents/${item.id}`} className="font-mono hover:underline">{item.id}</Link>
-                                </TableCell>
-                                <TableCell className="font-medium">{item.documentType}</TableCell>
-                                <TableCell>
-                                    <Badge variant="destructive">{item.escalationReason}</Badge>
-                                </TableCell>
-                                <TableCell>{new Date(item.reportDate).toLocaleDateString()}</TableCell>
-                                <TableCell className="flex gap-2">
-                                    <Button size="sm" variant="outline" asChild>
-                                        <Link href={`/documents/${item.id}`}>View Details</Link>
-                                    </Button>
-                                    <Button size="sm" onClick={() => handleClaimAction(item.id, 'approve')}>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Approve Claim
-                                    </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => handleClaimAction(item.id, 'deny')}>
-                                        <X className="mr-2 h-4 w-4" />
-                                        Deny Claim
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                 <PoliceDashboardClient initialCases={mockEscalated} />
             </CardContent>
         </Card>
     </div>

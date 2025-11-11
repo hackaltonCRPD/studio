@@ -1,7 +1,5 @@
 
 
-"use client";
-
 import {
   Card,
   CardContent,
@@ -11,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getDocumentById, getUserById } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,50 +17,22 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone, Hand } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { useEffect, useState } from "react";
-import type { DocumentReport, User as UserType } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { ClaimButton } from "./claim-button";
 
-export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const [document, setDocument] = useState<DocumentReport | null>(null);
-  const [reportedByUser, setReportedByUser] = useState<UserType | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchDetails = async () => {
-      setIsLoading(true);
-      const doc = await getDocumentById(params.id);
-      if (!doc) {
-        setIsLoading(false);
-        notFound();
-        return;
-      }
-      setDocument(doc);
-
-      const [reporter, authUser] = await Promise.all([
-        getUserById(doc.reportedBy),
-        getAuthenticatedUser(),
-      ]);
-
-      setReportedByUser(reporter);
-      setCurrentUser(authUser);
-      setIsLoading(false);
-    };
-
-    fetchDetails();
-  }, [params.id]);
-
-
-  if (isLoading) {
-    return <Skeleton className="h-96 w-full" />
+export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
+  const document = await getDocumentById(params.id);
+  
+  if (!document) {
+    notFound();
   }
 
-  if (!document || !currentUser) {
-    return notFound();
+  const [reportedByUser, currentUser] = await Promise.all([
+    getUserById(document.reportedBy),
+    getAuthenticatedUser(),
+  ]);
+
+  if (!currentUser) {
+    notFound();
   }
 
   const isAdmin = currentUser.role === 'admin';
@@ -90,35 +60,6 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
     if (isAdmin || isPolice) return true;
     return false;
   }
-  
-  const handleClaim = async () => {
-    try {
-        const response = await fetch(`http://localhost:5000/api/documents/${document.id}/claim`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to claim document.');
-        }
-        
-        toast({
-            title: 'Claim Initiated',
-            description: 'RC Staff has been notified. They will review your claim.',
-        });
-        
-        // Optimistically update the status on the page
-        setDocument({ ...document, status: 'claimed' });
-        
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Claim Failed',
-            description: error.message,
-        });
-    }
-};
 
   return (
     <div className="space-y-6">
@@ -142,12 +83,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                         </Link>
                     </Button>
                 )}
-                 {canClaim && (
-                    <Button size="sm" onClick={handleClaim}>
-                        <Hand className="mr-2 h-4 w-4" />
-                        Claim This Item
-                    </Button>
-                )}
+                 {canClaim && <ClaimButton documentId={document.id} />}
             </div>
         </div>
         <Card>
