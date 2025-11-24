@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,9 +24,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Send } from "lucide-react"
-import { getAuthenticatedUser } from "@/lib/auth"
-import { useEffect, useState } from "react"
-import type { User } from "@/lib/types"
+import { useAuth } from "@/firebase/auth/use-user"
+import { addDoc, collection, serverTimestamp } from "firebase/firestore"
+import { db } from "@/firebase"
 
 const formSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters."),
@@ -36,11 +35,7 @@ const formSchema = z.object({
 
 export default function FeedbackPage() {
   const { toast } = useToast()
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    getAuthenticatedUser().then(setUser);
-  }, []);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,13 +51,12 @@ export default function FeedbackPage() {
         return;
     }
     try {
-        const response = await fetch(`http://localhost:5000/api/feedback`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...values, userId: user.id }),
-            credentials: 'include',
+        await addDoc(collection(db, "feedback"), {
+            ...values,
+            userId: user.uid,
+            date: serverTimestamp(),
+            status: "open",
         });
-        if (!response.ok) throw new Error("Failed to submit feedback");
         
         toast({
         title: "Feedback Submitted",

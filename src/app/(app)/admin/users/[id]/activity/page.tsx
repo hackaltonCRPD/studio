@@ -1,4 +1,5 @@
 
+'use client';
 import {
   Card,
   CardContent,
@@ -20,12 +21,28 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Info, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import type { User, ActivityLog } from "@/lib/types";
 
-export default async function ActivityLogPage({ params }: { params: { id: string } }) {
-  const [user, logs] = await Promise.all([
-    getUserById(params.id),
-    getActivityLogsForUser(params.id)
-  ]);
+export default function ActivityLogPage({ params }: { params: { id: string } }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      getUserById(params.id),
+      getActivityLogsForUser(params.id)
+    ]).then(([userData, logData]) => {
+      setUser(userData);
+      setLogs(logData);
+      setLoading(false);
+    });
+  }, [params.id]);
+
+  if (loading) {
+    return <div>Loading activity...</div>
+  }
 
   if (!user) {
     notFound();

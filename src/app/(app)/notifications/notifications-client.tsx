@@ -1,14 +1,15 @@
 
 "use client"
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import type { Notification, User } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
+import { doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 interface NotificationsClientProps {
     initialNotifications: Notification[];
@@ -22,7 +23,8 @@ export function NotificationsClient({ initialNotifications, user, unreadCount: i
 
     const handleMarkAsRead = async (id: string) => {
         try {
-            await fetch(`http://localhost:5000/api/notifications/${id}/read`, { method: 'PUT' });
+            const notifRef = doc(db, "notifications", id);
+            await updateDoc(notifRef, { isRead: true });
             setNotifications(notifications.map(n => {
                 if (n.id === id && !n.isRead) {
                     setUnreadCount(prev => prev - 1);
@@ -36,9 +38,15 @@ export function NotificationsClient({ initialNotifications, user, unreadCount: i
     };
 
     const handleMarkAllAsRead = async () => {
-        if (!user) return;
+        if (!user || unreadCount === 0) return;
         try {
-            await fetch(`http://localhost:5000/api/notifications/user/${user.id}/read-all`, { method: 'PUT' });
+            const batch = writeBatch(db);
+            const unreadNotifications = notifications.filter(n => !n.isRead);
+            unreadNotifications.forEach(n => {
+                const notifRef = doc(db, "notifications", n.id);
+                batch.update(notifRef, { isRead: true });
+            });
+            await batch.commit();
             setNotifications(notifications.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (error) {

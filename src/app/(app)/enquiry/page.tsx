@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,6 +24,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Send } from "lucide-react"
+import { useAuth } from "@/firebase/auth/use-user"
+import { addDoc, collection, serverTimestamp } from "firebase/firestore"
+import { db } from "@/firebase"
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -35,11 +37,13 @@ const formSchema = z.object({
 
 export default function EnquiryPage() {
   const { toast } = useToast()
+  const { user } = useAuth();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      email: "",
+      name: user?.displayName || "",
+      email: user?.email || "",
       subject: "",
       question: "",
     },
@@ -47,13 +51,12 @@ export default function EnquiryPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch(`http://localhost:5000/api/enquiries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+      await addDoc(collection(db, "enquiries"), {
+        ...values,
+        userId: user?.uid || null,
+        date: serverTimestamp(),
+        status: "open",
       });
-
-      if (!response.ok) throw new Error("Failed to submit enquiry");
 
       toast({
         title: "Enquiry Submitted",

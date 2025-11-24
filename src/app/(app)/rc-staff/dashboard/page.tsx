@@ -1,4 +1,5 @@
 
+'use client';
 import {
   Card,
   CardContent,
@@ -11,6 +12,8 @@ import { Hand, PackagePlus, Truck } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import Link from "next/link";
 import { RCStaffDashboardClient } from "./rc-staff-dashboard-client";
+import { useEffect, useState } from "react";
+import type { DocumentReport } from "@/lib/types";
 
 type StatCardProps = {
     title: string;
@@ -40,16 +43,29 @@ const StatCard = ({ title, value, icon: Icon, description, buttonLink, buttonTex
 );
 
 
-export default async function RCStaffDashboardPage() {
-    const [found, claimed] = await Promise.all([
-        getDocuments({status: 'found'}),
-        getDocuments({status: 'claimed'})
-    ]);
+export default function RCStaffDashboardPage() {
+    const [foundItems, setFoundItems] = useState<DocumentReport[]>([]);
+    const [pendingClaims, setPendingClaims] = useState<(DocumentReport & { claimantName: string })[]>([]);
+    const [recentHandovers, setRecentHandovers] = useState<DocumentReport[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.all([
+            getDocuments({status: 'found'}),
+            getDocuments({status: 'claimed'})
+        ]).then(([found, claimed]) => {
+            setFoundItems(found);
+            // Mocking claims and handovers from claimed items
+            const mockClaims = claimed.slice(0,2).map(d => ({ ...d, claimantName: 'John Doe' }));
+            setPendingClaims(mockClaims);
+            setRecentHandovers(claimed.slice(2,5));
+            setLoading(false);
+        });
+    }, []);
     
-    // Mocking claims and handovers
-    const foundItems = found;
-    const pendingClaims = found.slice(0,2).map(d => ({ ...d, claimantName: 'John Doe' }));
-    const recentHandovers = claimed.slice(0,3);
+    if (loading) {
+        return <div>Loading RC Staff dashboard...</div>;
+    }
 
   return (
     <div className="space-y-6">

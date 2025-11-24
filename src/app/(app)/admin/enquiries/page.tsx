@@ -1,4 +1,5 @@
 
+'use client';
 import {
   Card,
   CardContent,
@@ -9,9 +10,24 @@ import {
 import { getEnquiries, getUsers } from "@/lib/data";
 import type { Enquiry, User as UserType } from "@/lib/types";
 import { EnquiriesClient } from "./enquiries-client";
+import { useEffect, useState } from "react";
 
-export default async function AdminEnquiriesPage() {
-  const [enquiryItems, users] = await Promise.all([getEnquiries(), getUsers()]);
+export default function AdminEnquiriesPage() {
+  const [enquiryItems, setEnquiryItems] = useState<Enquiry[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getEnquiries(), getUsers()]).then(([enquiries, userList]) => {
+      setEnquiryItems(enquiries);
+      setUsers(userList);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return <div>Loading enquiries...</div>
+  }
 
   return (
     <Card>

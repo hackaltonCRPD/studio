@@ -5,6 +5,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth, db } from "@/firebase";
+import { setDoc, doc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,27 +39,30 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, phoneNumber, preferredContactMethod }),
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: name });
+
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        email,
+        role,
+        phoneNumber,
+        preferredContactMethod,
+        status: "active",
+        credibilityScore: 80,
+        createdAt: new Date().toISOString(),
+        avatarUrl: user.photoURL,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create account. Please try again.");
-      }
       
-      const data = await response.json();
-      const user = data.user;
-
       toast({
         title: "Account Created",
-        description: `Welcome, ${user.name}! Your account is ready.`,
+        description: `Welcome, ${name}! Your account is ready.`,
       });
 
       let dashboardUrl = "/dashboard";
-      switch(user.role) {
+      switch(role) {
         case "rc_staff":
           dashboardUrl = "/rc-staff/dashboard";
           break;

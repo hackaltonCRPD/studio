@@ -1,4 +1,5 @@
 
+'use client';
 import {
   Card,
   CardContent,
@@ -8,16 +9,30 @@ import {
 } from "@/components/ui/card";
 import { getDocuments } from "@/lib/data";
 import { SearchClient } from "./search-client";
+import { useEffect, useState } from "react";
+import type { DocumentReport } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
 
-export default async function SearchDocumentsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default function SearchDocumentsPage() {
+  const searchParams = useSearchParams();
+  const [documents, setDocuments] = useState<DocumentReport[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filters = {
-    documentType: typeof searchParams.documentType === 'string' ? searchParams.documentType : undefined,
-    location: typeof searchParams.q === 'string' ? searchParams.q : undefined,
-    status: typeof searchParams.status === 'string' ? searchParams.status : undefined,
-  };
+  useEffect(() => {
+    const filters = {
+      documentType: searchParams.get('documentType') || undefined,
+      location: searchParams.get('q') || undefined,
+      status: searchParams.get('status') || undefined,
+    };
+    getDocuments(filters).then(docs => {
+        setDocuments(docs);
+        setLoading(false);
+    });
+  }, [searchParams]);
 
-  const documents = await getDocuments(filters);
+  if(loading) {
+    return <div>Loading documents...</div>
+  }
 
   return (
     <Card>

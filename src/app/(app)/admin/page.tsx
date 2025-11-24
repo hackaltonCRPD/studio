@@ -39,10 +39,11 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUsers } from "@/lib/data";
+import { updateDoc, doc } from "firebase/firestore";
+import { db } from "@/firebase";
 
 
 export default function AdminPage() {
-    // This is now a client component that wraps the server-fetched table
     return (
         <Card>
             <CardHeader>
@@ -72,10 +73,10 @@ function UserTable() {
 
   useEffect(() => {
     setIsLoading(true);
-    getUsers({
-      status: searchParams.get('status') as UserStatus | 'all' || 'all',
-      role: searchParams.get('role') as UserRole | 'all' || 'all',
-    }).then(fetchedUsers => {
+    const status = searchParams.get('status') as UserStatus | 'all' || 'all';
+    const role = searchParams.get('role') as UserRole | 'all' || 'all';
+
+    getUsers({ status, role }).then(fetchedUsers => {
       setUsers(fetchedUsers);
       setIsLoading(false);
     });
@@ -84,7 +85,6 @@ function UserTable() {
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const credibilityMatch = user.credibilityScore >= credibilityFilter[0] && user.credibilityScore <= credibilityFilter[1];
-      // Status and Role are now filtered by the API call, but we keep this for client-side adjustments if needed.
       const statusMatch = statusFilter === "all" || user.status === statusFilter;
       const roleMatch = roleFilter === "all" || user.role === roleFilter;
       return credibilityMatch && statusMatch && roleMatch;
@@ -97,15 +97,10 @@ function UserTable() {
 
   const handleUserStatusChange = async (userId: string, newStatus: UserStatus) => {
     try {
-        const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
-        });
-        if (!response.ok) throw new Error("Failed to update user status");
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, { status: newStatus });
 
-        const updatedUser = await response.json();
-        setUsers(users.map(u => u.id === userId ? { ...u, status: updatedUser.status } : u));
+        setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
         toast({
             title: "User Updated",
             description: `User has been ${newStatus}.`,
@@ -143,7 +138,7 @@ function UserTable() {
   const userStatuses: UserStatus[] = ["active", "suspended", "archived"];
   
   const handleFilterChange = (filter: 'status' | 'role', value: string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     if (value !== 'all') {
       params.set(filter, value);
     } else {

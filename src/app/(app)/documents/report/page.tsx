@@ -40,9 +40,10 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon, Upload } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import { getAuthenticatedUser } from "@/lib/auth"
-import type { User } from "@/lib/types"
-import { useEffect, useState } from "react"
+import { useAuth } from "@/firebase/auth/use-user"
+import { addDoc, collection, serverTimestamp } from "firebase/firestore"
+import { db, storage } from "@/firebase"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -57,11 +58,7 @@ const formSchema = z.object({
 
 export default function ReportDocumentPage() {
   const { toast } = useToast()
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    getAuthenticatedUser().then(setUser);
-  }, []);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,22 +76,20 @@ export default function ReportDocumentPage() {
         return;
     }
     try {
-        const response = await fetch(`http://localhost:5000/api/documents`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                ...values,
-                reportedBy: user.id, // Get current user's ID from session
-                reportDate: new Date().toISOString()
-            }),
-            credentials: 'include',
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to submit report');
+        let imageUrl: string | undefined = undefined;
+        if (values.file) {
+          const fileRef = ref(storage, `documents/${user.id}/${values.file.name}`);
+          const snapshot = await uploadBytes(fileRef, values.file);
+          imageUrl = await getDownloadURL(snapshot.ref);
         }
+
+        await addDoc(collection(db, "documents"), {
+            ...values,
+            imageUrl,
+            file: undefined, // Don't store the file object itself
+            reportedBy: user.id, 
+            reportDate: serverTimestamp()
+        });
 
         toast({
             title: "Report Submitted",
@@ -103,6 +98,7 @@ export default function ReportDocumentPage() {
         form.reset();
 
     } catch (error) {
+        console.error(error);
         toast({
             variant: "destructive",
             title: "Submission Failed",

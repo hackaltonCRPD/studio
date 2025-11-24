@@ -32,6 +32,8 @@ import { useState } from "react";
 import type { Enquiry, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 
 interface EnquiriesClientProps {
     initialEnquiries: Enquiry[];
@@ -49,12 +51,8 @@ export function EnquiriesClient({ initialEnquiries, users }: EnquiriesClientProp
 
   const handleStatusChange = async (id: string, newStatus: "open" | "resolved") => {
     try {
-        const response = await fetch(`http://localhost:5000/api/enquiries/${id}/status`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
-        });
-        if (!response.ok) throw new Error("Failed to update status");
+        const enquiryRef = doc(db, "enquiries", id);
+        await updateDoc(enquiryRef, { status: newStatus });
         
         setEnquiryItems(enquiryItems.map(e => e.id === id ? { ...e, status: newStatus } : e));
         toast({

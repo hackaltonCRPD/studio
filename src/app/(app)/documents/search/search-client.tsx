@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Hand } from "lucide-react";
+import { Eye, Hand, File } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -26,6 +26,9 @@ import {
 import type { DocumentReport } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { doc, updateDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
+import { db } from "@/firebase";
+import { useAuth } from "@/firebase/auth/use-user";
 
 interface SearchClientProps {
     initialDocuments: DocumentReport[];
@@ -35,6 +38,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    const { user } = useAuth();
     
     const [documents, setDocuments] = useState<DocumentReport[]>(initialDocuments);
     
@@ -53,12 +57,11 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     const newFilters = { ...filters, [filterName]: value };
     setFilters(newFilters);
     
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
+    const queryParam = filterName === 'location' ? 'q' : filterName;
     if (value && value !== 'all') {
-        const queryParam = filterName === 'location' ? 'q' : filterName;
         params.set(queryParam, value);
     } else {
-        const queryParam = filterName === 'location' ? 'q' : filterName;
         params.delete(queryParam);
     }
     router.push(`/documents/search?${params.toString()}`);
@@ -79,20 +82,25 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
         }
     }
 
-    const handleClaim = async (docId: string) => {
+    const handleClaim = async (doc: DocumentReport) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to claim an item." });
+            return;
+        }
         try {
-            const response = await fetch(`http://localhost:5000/api/documents/${docId}/claim`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
+            const docRef = doc(db, "documents", doc.id);
+            await updateDoc(docRef, { status: 'claimed' });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to claim document.');
-            }
+             await addDoc(collection(db, "notifications"), {
+                userId: doc.reportedBy,
+                title: "Your Item Has a Claim!",
+                description: `${user.displayName} has claimed your found item: ${doc.documentType}. RC Staff will review the claim.`,
+                timestamp: serverTimestamp(),
+                isRead: false,
+                link: `/documents/${doc.id}`
+            });
             
-            // Optimistically update the UI
-            setDocuments(documents.map(doc => doc.id === docId ? {...doc, status: 'claimed'} : doc));
+            setDocuments(documents.map(d => d.id === doc.id ? {...d, status: 'claimed'} : d));
 
             toast({
                 title: 'Claim Initiated',
@@ -111,7 +119,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     <>
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <Input
-            placeholder="Search by location, description, etc..."
+            placeholder="Search by location..."
             value={filters.location}
             onChange={(e) => handleFilterChange("location", e.target.value)}
             className="w-full sm:max-w-sm"
@@ -183,8 +191,8 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
                 <TableCell>{doc.location}</TableCell>
                 <TableCell className="hidden md:table-cell">{new Date(doc.reportDate).toLocaleDateString()}</TableCell>
                 <TableCell>
-                    {doc.status === 'found' ? (
-                        <Button size="sm" onClick={() => handleClaim(doc.id)}>
+                    {doc.status === 'found' && user && user.id !== doc.reportedBy ? (
+                        <Button size="sm" onClick={() => handleClaim(doc)}>
                             <Hand className="mr-2 h-4 w-4" />
                             Claim
                         </Button>

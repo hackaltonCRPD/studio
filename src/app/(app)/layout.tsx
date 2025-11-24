@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { useAuth, AuthProvider } from "@/firebase/auth/use-user";
 import type { User } from "@/lib/types";
 import { MainNav } from "@/components/layout/main-nav";
 import { UserNav } from "@/components/auth/user-nav";
@@ -19,29 +19,29 @@ import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { redirect } from "next/navigation";
 
-export default function AppLayout({
+function AppLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const { user, loading } = useAuth();
+  
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const authenticatedUser = await getAuthenticatedUser();
-        setUser(authenticatedUser);
-      } catch (error) {
-        console.error("Failed to fetch authenticated user:", error);
-        // Handle error case, e.g., redirect to login
-      } finally {
-        setIsLoading(false);
-      }
+    if (!loading && !user) {
+        redirect('/login');
     }
-    fetchUser();
-  }, []);
+  }, [user, loading]);
+
+  if (loading) {
+     return (
+       <div className="flex items-center justify-center h-screen">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <p className="ml-4">Loading user...</p>
+       </div>
+     )
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -98,19 +98,19 @@ export default function AppLayout({
               </div>
             </form>
           </div>
-          {isLoading ? (
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-9 w-9 rounded-full" />
-            </div>
-          ) : user ? (
+          {user ? (
             <>
               <NotificationsPopover user={user} />
               <ThemeToggle />
               <UserNav user={user} />
             </>
-          ) : null}
+          ) : (
+             <div className="flex items-center gap-4">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-9 w-9 rounded-full" />
+            </div>
+          )}
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">
           {children}
@@ -118,4 +118,17 @@ export default function AppLayout({
       </div>
     </div>
   );
+}
+
+
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AuthProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </AuthProvider>
+  )
 }

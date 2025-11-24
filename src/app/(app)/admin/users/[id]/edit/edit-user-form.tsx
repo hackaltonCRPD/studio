@@ -34,6 +34,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { User, UserRole } from "@/lib/types";
 import Link from "next/link";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -65,12 +67,8 @@ export function EditUserForm({ userToEdit, currentUser }: EditUserFormProps) {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const response = await fetch(`http://localhost:5000/api/users/${userToEdit.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
-            });
-            if (!response.ok) throw new Error("Failed to update user");
+            const userRef = doc(db, "users", userToEdit.id);
+            await updateDoc(userRef, values);
 
             toast({
                 title: "User Updated",
@@ -121,7 +119,7 @@ export function EditUserForm({ userToEdit, currentUser }: EditUserFormProps) {
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input type="email" placeholder="name@example.com" {...field} />
+                                        <Input type="email" placeholder="name@example.com" {...field} disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

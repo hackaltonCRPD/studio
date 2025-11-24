@@ -1,4 +1,5 @@
 
+'use client';
 
 import {
   Card,
@@ -18,10 +19,23 @@ import Link from "next/link";
 import type { User, UserStatus } from "@/lib/types";
 import { ArrowLeft, Edit, FileText, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
 
-export default async function UserDetailsPage({ params }: { params: { id: string } }) {
-    const user = await getUserById(params.id);
+export default function UserDetailsPage({ params }: { params: { id: string } }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getUserById(params.id).then(userData => {
+            setUser(userData);
+            setLoading(false);
+        });
+    }, [params.id]);
+
+    if (loading) {
+        return <div>Loading...</div>
+    }
 
     if (!user) {
         notFound();

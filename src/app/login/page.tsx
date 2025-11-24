@@ -5,6 +5,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth, db } from "@/firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,34 +21,27 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        throw new Error( "Login failed. Please check your credentials.");
-      }
-      
-      const user = data.user;
-  
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${user.name}!`,
+        description: `Welcome back!`,
       });
   
+      // Fetch user role to redirect
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const role = userDoc.exists() ? userDoc.data().role : "reporter";
+
       let dashboardUrl = "/dashboard";
-      switch (user.role) {
+      switch (role) {
         case "rc_staff":
           dashboardUrl = "/rc-staff/dashboard";
           break;
@@ -71,6 +67,58 @@ export default function LoginPage() {
       });
     } finally {
         setIsLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setIsGoogleLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // New Google user, create a document in Firestore
+        await setDoc(userDocRef, {
+          name: user.displayName,
+          email: user.email,
+          avatarUrl: user.photoURL,
+          role: 'reporter', // Default role
+          status: 'active',
+          credibilityScore: 80,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      toast({
+        title: "Login Successful",
+        description: `Welcome, ${user.displayName}!`,
+      });
+
+      const updatedUserDoc = await getDoc(userDocRef);
+      const role = updatedUserDoc.exists() ? updatedUserDoc.data().role : "reporter";
+
+      let dashboardUrl = "/dashboard";
+      switch (role) {
+        case "rc_staff": dashboardUrl = "/rc-staff/dashboard"; break;
+        case "police": dashboardUrl = "/police/dashboard"; break;
+        case "admin": dashboardUrl = "/dashboard"; break;
+        default: dashboardUrl = "/dashboard"; break;
+      }
+      router.push(dashboardUrl);
+
+    } catch (error: any) {
+      console.error("Google Login Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Google Login Failed",
+        description: error.message || "Could not log in with Google.",
+      });
+    } finally {
+      setIsGoogleLoading(false);
     }
   }
   
@@ -101,7 +149,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
                <div className="grid gap-2">
@@ -121,14 +169,14 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <Button variant="outline" className="w-full" disabled={isLoading}>
-                Login with Google
+              <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || isGoogleLoading}>
+                {isGoogleLoading ? "..." : "Login with Google"}
               </Button>
             </form>
           <div className="mt-4 text-center text-sm">

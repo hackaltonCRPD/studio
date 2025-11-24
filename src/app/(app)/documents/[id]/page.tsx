@@ -1,4 +1,5 @@
 
+'use client';
 
 import {
   Card,
@@ -14,25 +15,44 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone, Hand } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User as UserIcon, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { getAuthenticatedUser } from "@/lib/auth";
 import { ClaimButton } from "./claim-button";
+import { useEffect, useState } from "react";
+import type { DocumentReport, User } from "@/lib/types";
+import { useAuth } from "@/firebase/auth/use-user";
 
-export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const document = await getDocumentById(params.id);
+export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
+  const [document, setDocument] = useState<DocumentReport | null>(null);
+  const [reportedByUser, setReportedByUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user: currentUser } = useAuth();
+  
+  useEffect(() => {
+    async function loadData() {
+        const docData = await getDocumentById(params.id);
+        if (docData) {
+            setDocument(docData);
+            if (docData.reportedBy) {
+                const reporter = await getUserById(docData.reportedBy);
+                setReportedByUser(reporter);
+            }
+        }
+        setLoading(false);
+    }
+    loadData();
+  }, [params.id]);
+
+  if (loading) {
+    return <div>Loading document details...</div>
+  }
   
   if (!document) {
     notFound();
   }
 
-  const [reportedByUser, currentUser] = await Promise.all([
-    getUserById(document.reportedBy),
-    getAuthenticatedUser(),
-  ]);
-
   if (!currentUser) {
-    notFound();
+    return <div>Please log in to view this page.</div>
   }
 
   const isAdmin = currentUser.role === 'admin';
@@ -56,7 +76,8 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
 
   const canViewPhoneNumber = () => {
     if (!reportedByUser) return false;
-    if (reportedByUser.role === 'police') return true;
+    // Police role in the document, not current user
+    if (reportedByUser.role === 'police') return true; 
     if (isAdmin || isPolice) return true;
     return false;
   }
@@ -83,7 +104,7 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
                         </Link>
                     </Button>
                 )}
-                 {canClaim && <ClaimButton documentId={document.id} />}
+                 {canClaim && <ClaimButton documentId={document.id} ownerId={document.reportedBy} />}
             </div>
         </div>
         <Card>
@@ -158,7 +179,7 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
             </CardContent>
             <CardFooter className="border-t pt-6">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="h-4 w-4" />
+                    <UserIcon className="h-4 w-4" />
                     <span>Reported by:</span>
                     {reportedByUser ? (
                          <Button variant="link" className="p-0 h-auto" asChild>

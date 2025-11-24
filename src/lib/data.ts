@@ -1,44 +1,67 @@
 
-import type { DocumentReport, User, Feedback, Enquiry, ActivityLog, Notification, UserStatus, UserRole } from "@/lib/types";
+'use client';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  Timestamp,
+} from 'firebase/firestore';
+import { db } from '@/firebase';
+import type {
+  DocumentReport,
+  User,
+  Feedback,
+  Enquiry,
+  ActivityLog,
+  Notification,
+  UserStatus,
+  UserRole,
+} from '@/lib/types';
 
-const API_URL = "http://localhost:5000/api";
-
+const fromTimestamp = (timestamp: Timestamp | undefined) => {
+  return timestamp ? timestamp.toDate().toISOString() : new Date().toISOString();
+}
 
 // --- USER FUNCTIONS ---
-export async function getUsers(filters?: { status?: UserStatus | 'all', role?: UserRole | 'all' }): Promise<User[]> {
-  const params = new URLSearchParams();
+export async function getUsers(filters?: {
+  status?: UserStatus | 'all';
+  role?: UserRole | 'all';
+}): Promise<User[]> {
+  const usersRef = collection(db, 'users');
+  let q = query(usersRef);
+
   if (filters?.status && filters.status !== 'all') {
-    params.append('status', filters.status);
+    q = query(q, where('status', '==', filters.status));
   }
   if (filters?.role && filters.role !== 'all') {
-    params.append('role', filters.role);
+    q = query(q, where('role', '==', filters.role));
   }
 
   try {
-    const response = await fetch(`${API_URL}/users?${params.toString()}`);
-    if (!response.ok) {
-      console.error("Failed to fetch users:", response.statusText);
-      return [];
-    }
-    const result = await response.json();
-    // Backend sends { data: [User] }, and users have both id and _id.
-    return result.data.map((user: any) => ({...user, id: user.id || user._id.toString()}));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: fromTimestamp(doc.data().createdAt),
+    })) as User[];
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error('Error fetching users:', error);
     return [];
   }
 }
 
 export async function getUserById(id: string): Promise<User | null> {
   try {
-    const response = await fetch(`${API_URL}/users/${id}`);
-    if (!response.ok) {
-      if(response.status === 404) return null;
-      console.error("Failed to fetch user:", response.statusText);
-      return null;
+    const userDoc = await getDoc(doc(db, 'users', id));
+    if (userDoc.exists()) {
+      return { id: userDoc.id, ...userDoc.data(), createdAt: fromTimestamp(userDoc.data().createdAt) } as User;
     }
-    const user = await response.json();
-    return {...user, id: user.id || user._id.toString()};
+    return null;
   } catch (error) {
     console.error(`Error fetching user ${id}:`, error);
     return null;
@@ -46,132 +69,139 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 // --- DOCUMENT FUNCTIONS ---
-export async function getDocuments(filters?: { documentType?: string, location?: string, status?: string }): Promise<DocumentReport[]> {
-  const params = new URLSearchParams();
+export async function getDocuments(filters?: {
+  documentType?: string;
+  location?: string;
+  status?: string;
+}): Promise<DocumentReport[]> {
+  const documentsRef = collection(db, 'documents');
+  let q = query(documentsRef);
+
   if (filters?.documentType && filters.documentType !== 'all') {
-    params.append('documentType', filters.documentType);
-  }
-   if (filters?.location) {
-    params.append('q', filters.location);
+    q = query(q, where('documentType', '==', filters.documentType));
   }
   if (filters?.status && filters.status !== 'all') {
-    params.append('status', filters.status);
+    q = query(q, where('status', '==', filters.status));
+  }
+  // Firestore doesn't support full-text search out-of-the-box on client.
+  // A simple equality check for location will be used.
+  if (filters?.location) {
+    q = query(q, where('location', '>=', filters.location), where('location', '<=', filters.location + '\uf8ff'));
   }
 
   try {
-    const response = await fetch(`${API_URL}/documents?${params.toString()}`);
-    if (!response.ok) {
-      console.error("Failed to fetch documents:", response.statusText);
-      return [];
-    }
-    const result = await response.json();
-    // Backend sends { data: [Document] }
-    return result.data.map((doc: any) => ({
-        ...doc, 
-        id: doc.id || doc._id.toString(), 
-        // Ensure reportedBy is a string ID
-        reportedBy: doc.reportedBy?._id || doc.reportedBy?.id || doc.reportedBy 
-    }));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      dateLost: fromTimestamp(doc.data().dateLost),
+      reportDate: fromTimestamp(doc.data().reportDate),
+    })) as DocumentReport[];
   } catch (error) {
-    console.error("Error fetching documents:", error);
+    console.error('Error fetching documents:', error);
     return [];
   }
 }
 
 export async function getDocumentById(id: string): Promise<DocumentReport | null> {
   try {
-    const response = await fetch(`${API_URL}/documents/${id}`);
-    if (!response.ok) {
-        if(response.status === 404) return null;
-        console.error("Failed to fetch document:", response.statusText);
-        return null;
+    const docRef = doc(db, 'documents', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+       const data = docSnap.data();
+      return { 
+          id: docSnap.id,
+          ...data,
+          dateLost: fromTimestamp(data.dateLost),
+          reportDate: fromTimestamp(data.reportDate),
+      } as DocumentReport;
     }
-    const doc = await response.json();
-    return {
-        ...doc, 
-        id: doc.id || doc._id.toString(),
-        // Ensure reportedBy is a string ID, from a potentially populated object
-        reportedBy: doc.reportedBy?._id || doc.reportedBy?.id || doc.reportedBy
-    };
+    return null;
   } catch (error) {
     console.error(`Error fetching document ${id}:`, error);
     return null;
   }
 }
 
-
 // --- FEEDBACK & ENQUIRY FUNCTIONS ---
-export async function getFeedbacks(status?: "open" | "resolved" | "all"): Promise<Feedback[]> {
-    const params = new URLSearchParams();
-    if(status && status !== 'all') {
-        params.append('status', status);
-    }
-    try {
-        const response = await fetch(`${API_URL}/feedback?${params.toString()}`);
-        if(!response.ok) {
-            console.error("Failed to fetch feedback:", response.statusText);
-            return [];
-        }
-        const result = await response.json();
-        // Backend sends { data: [...] }
-        return result.data.map((item: any) => ({...item, id: item.id || item._id.toString()}));
-    } catch(error) {
-        console.error("Error fetching feedback:", error);
-        return [];
-    }
+export async function getFeedbacks(
+  status?: 'open' | 'resolved' | 'all'
+): Promise<Feedback[]> {
+  const feedbackRef = collection(db, 'feedback');
+  let q = query(feedbackRef);
+
+  if (status && status !== 'all') {
+    q = query(q, where('status', '==', status));
+  }
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      date: fromTimestamp(doc.data().date)
+    })) as Feedback[];
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    return [];
+  }
 }
 
-export async function getEnquiries(status?: "open" | "resolved" | "all"): Promise<Enquiry[]> {
-     const params = new URLSearchParams();
-    if(status && status !== 'all') {
-        params.append('status', status);
-    }
-    try {
-        const response = await fetch(`${API_URL}/enquiries?${params.toString()}`);
-        if(!response.ok) {
-            console.error("Failed to fetch enquiries:", response.statusText);
-            return [];
-        }
-        const result = await response.json();
-        // Backend sends { data: [...] }
-        return result.data.map((item: any) => ({...item, id: item.id || item._id.toString()}));
-    } catch(error) {
-        console.error("Error fetching enquiries:", error);
-        return [];
-    }
-}
+export async function getEnquiries(
+  status?: 'open' | 'resolved' | 'all'
+): Promise<Enquiry[]> {
+  const enquiriesRef = collection(db, 'enquiries');
+  let q = query(enquiriesRef);
+  if (status && status !== 'all') {
+    q = query(q, where('status', '==', status));
+  }
 
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      date: fromTimestamp(doc.data().date),
+    })) as Enquiry[];
+  } catch (error) {
+    console.error('Error fetching enquiries:', error);
+    return [];
+  }
+}
 
 // --- ACTIVITY LOG FUNCTIONS ---
-export async function getActivityLogsForUser(userId: string): Promise<ActivityLog[]> {
-    try {
-        const response = await fetch(`${API_URL}/users/${userId}/activity`);
-         if(!response.ok) {
-            console.error("Failed to fetch activity logs:", response.statusText);
-            return [];
-        }
-        const result = await response.json();
-        // Backend sends a plain array
-        return result.map((item: any) => ({...item, id: item.id || item._id.toString()}));
-    } catch(error) {
-        console.error(`Error fetching activity logs for user ${userId}:`, error);
-        return [];
-    }
+export async function getActivityLogsForUser(
+  userId: string
+): Promise<ActivityLog[]> {
+  const activityRef = collection(db, 'activity');
+  const q = query(activityRef, where('userId', '==', userId));
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: fromTimestamp(doc.data().timestamp),
+    })) as ActivityLog[];
+  } catch (error) {
+    console.error(`Error fetching activity logs for user ${userId}:`, error);
+    return [];
+  }
 }
 
 // --- NOTIFICATION FUNCTIONS ---
-export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
-    try {
-        const response = await fetch(`${API_URL}/notifications/user/${userId}`);
-         if(!response.ok) {
-            console.error("Failed to fetch notifications:", response.statusText);
-            return [];
-        }
-        const result = await response.json();
-        // Backend sends a plain array
-        return result.map((item: any) => ({...item, id: item.id || item._id.toString()}));
-    } catch(error) {
-        console.error(`Error fetching notifications for user ${userId}:`, error);
-        return [];
-    }
+export async function getNotificationsForUser(
+  userId: string
+): Promise<Notification[]> {
+   const notificationsRef = collection(db, 'notifications');
+   const q = query(notificationsRef, where('userId', '==', userId));
+   try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: fromTimestamp(doc.data().timestamp),
+    })) as Notification[];
+  } catch (error) {
+    console.error(`Error fetching notifications for user ${userId}:`, error);
+    return [];
+  }
 }

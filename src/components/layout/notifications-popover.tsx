@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import {
@@ -16,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { Separator } from "../ui/separator";
+import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch } from "firebase/firestore";
+import { db } from "@/firebase";
 
 export function NotificationsPopover({ user }: { user: User | null }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -23,12 +24,13 @@ export function NotificationsPopover({ user }: { user: User | null }) {
   
   useEffect(() => {
     if (user?.id) {
-        getNotificationsForUser(user.id).then(data => {
-            if (data) {
-                const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                setNotifications(sorted);
-            }
+        const q = query(collection(db, "notifications"), where("userId", "==", user.id));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const newNotifications = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data() } as Notification));
+            const sorted = newNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setNotifications(sorted);
         });
+        return () => unsubscribe();
     }
   }, [user?.id]);
   
@@ -38,22 +40,22 @@ export function NotificationsPopover({ user }: { user: User | null }) {
     e.preventDefault();
     e.stopPropagation();
      try {
-        await fetch(`http://localhost:5000/api/notifications/${id}/read`, { method: 'PUT' });
-        setNotifications(
-            notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-        );
+        const notifRef = doc(db, "notifications", id);
+        await updateDoc(notifRef, { isRead: true });
     } catch (error) {
         console.error("Failed to mark as read", error);
     }
   };
   
   const handleMarkAllAsRead = async () => {
-    if (!user) return;
+    if (!user || unreadCount === 0) return;
     try {
-        await fetch(`http://localhost:5000/api/notifications/user/${user.id}/read-all`, { method: 'PUT' });
-        setNotifications(
-            notifications.map((n) => ({ ...n, isRead: true }))
-        );
+        const batch = writeBatch(db);
+        notifications.filter(n => !n.isRead).forEach(n => {
+          const notifRef = doc(db, "notifications", n.id);
+          batch.update(notifRef, { isRead: true });
+        });
+        await batch.commit();
     } catch (error) {
         console.error("Failed to mark all as read", error);
     }
@@ -68,7 +70,7 @@ export function NotificationsPopover({ user }: { user: User | null }) {
       return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, unreadCount]);
 
   const NotificationContent = ({ notification }: { notification: Notification }) => (
     <div 

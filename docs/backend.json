@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile information.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The user's full name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "avatarUrl": { "type": "string", "description": "URL for the user's avatar image." },
+        "role": { "type": "string", "enum": ["reporter", "finder", "rc_staff", "police", "admin"], "description": "The user's role in the system." },
+        "status": { "type": "string", "enum": ["active", "suspended", "archived"], "description": "The user's account status." },
+        "credibilityScore": { "type": "number", "description": "A score representing the user's credibility." },
+        "phoneNumber": { "type": "string", "description": "The user's phone number." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the user account was created." },
+        "preferredContactMethod": { "type": "string", "enum": ["email", "phone"], "description": "The user's preferred method of contact." }
+      },
+      "required": ["name", "email", "role", "status", "createdAt"]
+    },
+    "DocumentReport": {
+      "title": "Document Report",
+      "description": "A report for a lost or found document.",
+      "type": "object",
+      "properties": {
+        "documentType": { "type": "string" },
+        "description": { "type": "string" },
+        "dateLost": { "type": "string", "format": "date-time" },
+        "location": { "type": "string" },
+        "status": { "type": "string", "enum": ["lost", "found", "claimed"] },
+        "reportedBy": { "type": "string", "description": "The ID of the user who reported the document." },
+        "imageUrl": { "type": "string" },
+        "reportDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["documentType", "description", "dateLost", "location", "status", "reportedBy", "reportDate"]
+    },
+    "Feedback": {
+        "title": "Feedback",
+        "description": "User-submitted feedback.",
+        "type": "object",
+        "properties": {
+            "subject": { "type": "string" },
+            "message": { "type": "string" },
+            "userId": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["open", "resolved"] }
+        },
+        "required": ["subject", "message", "userId", "date", "status"]
+    },
+    "Enquiry": {
+        "title": "Enquiry",
+        "description": "User-submitted enquiry.",
+        "type": "object",
+        "properties": {
+            "subject": { "type": "string" },
+            "question": { "type": "string" },
+            "userId": { "type": "string" },
+            "email": { "type": "string", "format": "email"},
+            "name": { "type": "string" },
+            "date": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["open", "resolved"] }
+        },
+        "required": ["subject", "question", "email", "name", "date", "status"]
+    },
+    "ActivityLog": {
+        "title": "Activity Log",
+        "description": "Log of user activities.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "activity": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "details": { "type": "string" },
+            "ipAddress": { "type": "string" }
+        },
+        "required": ["userId", "activity", "timestamp", "ipAddress"]
+    },
+    "Notification": {
+        "title": "Notification",
+        "description": "A user notification.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "isRead": { "type": "boolean" },
+            "link": { "type": "string" }
+        },
+        "required": ["userId", "title", "description", "timestamp", "isRead"]
+    }
+  },
+  "auth": {
+    "providers": ["email-password", "google.com"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores individual user profiles."
+    },
+    "/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/DocumentReport" },
+      "description": "Stores reports of lost and found documents."
+    },
+    "/feedback/{feedbackId}": {
+        "schema": { "$ref": "#/entities/Feedback" },
+        "description": "Stores user feedback submissions."
+    },
+    "/enquiries/{enquiryId}": {
+        "schema": { "$ref": "#/entities/Enquiry" },
+        "description": "Stores user enquiries."
+    },
+    "/activity/{activityId}": {
+        "schema": { "$ref": "#/entities/ActivityLog" },
+        "description": "Stores logs of user activities."
+    },
+    "/notifications/{notificationId}": {
+        "schema": { "$ref": "#/entities/Notification" },
+        "description": "Stores user notifications."
+    }
+  }
+}
