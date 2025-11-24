@@ -54,7 +54,7 @@ export default function LandingPage() {
              </Link>
           </Button>
           <Button asChild>
-            <Link href="/login">
+            <Link href="/signup">
                 Sign Up <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
