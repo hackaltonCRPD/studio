@@ -1,6 +1,4 @@
 
-'use client';
-
 import {
   Card,
   CardContent,
@@ -18,38 +16,19 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, MapPin, User as UserIcon, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ClaimButton } from "./claim-button";
-import { useEffect, useState } from "react";
-import type { DocumentReport, User } from "@/lib/types";
-import { useAuth } from "@/firebase/auth/use-user";
+import { getAuthenticatedUser } from "@/lib/auth";
 
-export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const [document, setDocument] = useState<DocumentReport | null>(null);
-  const [reportedByUser, setReportedByUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { user: currentUser } = useAuth();
-  
-  useEffect(() => {
-    async function loadData() {
-        const docData = await getDocumentById(params.id);
-        if (docData) {
-            setDocument(docData);
-            if (docData.reportedBy) {
-                const reporter = await getUserById(docData.reportedBy);
-                setReportedByUser(reporter);
-            }
-        }
-        setLoading(false);
-    }
-    loadData();
-  }, [params.id]);
-
-  if (loading) {
-    return <div>Loading document details...</div>
-  }
+export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
+  const document = await getDocumentById(params.id);
   
   if (!document) {
     notFound();
   }
+
+  const [reportedByUser, currentUser] = await Promise.all([
+    getUserById(document.reportedBy),
+    getAuthenticatedUser()
+  ]);
 
   if (!currentUser) {
     return <div>Please log in to view this page.</div>

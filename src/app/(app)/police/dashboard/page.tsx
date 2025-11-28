@@ -1,6 +1,4 @@
 
-'use client';
-
 import {
   Card,
   CardContent,
@@ -11,26 +9,13 @@ import {
 import { ShieldAlert } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import { PoliceDashboardClient } from "./police-dashboard-client";
-import { useEffect, useState } from "react";
 import type { DocumentReport } from "@/lib/types";
 
-export default function PoliceDashboardPage() {
-  const [escalatedCases, setEscalatedCases] = useState<(DocumentReport & {escalationReason: string})[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    // In a real app, you'd fetch only escalated cases from a specific collection/field.
-    // We'll mock this by filtering for "claimed" and adding a reason.
-    getDocuments({ status: "claimed" }).then(docs => {
-        const mockEscalated = docs.slice(0,3).map(d => ({...d, escalationReason: "Multiple claims"}));
-        setEscalatedCases(mockEscalated);
-        setLoading(false);
-    });
-  }, []);
-
-  if(loading) {
-    return <div>Loading police dashboard...</div>
-  }
+export default async function PoliceDashboardPage() {
+  // In a real app, you'd fetch only escalated cases from a specific collection/field.
+  // We'll mock this by filtering for "claimed" and adding a reason.
+  const docs = await getDocuments({ status: "claimed" });
+  const escalatedCases = docs.slice(0, 3).map(d => ({ ...d, escalationReason: "Multiple claims" }));
 
   return (
      <div className="space-y-6">

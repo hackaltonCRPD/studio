@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -75,7 +76,6 @@ export function EditUserForm({ userToEdit, currentUser }: EditUserFormProps) {
                 description: `${values.name}'s profile has been successfully updated.`,
             });
             router.push("/admin");
-            router.refresh();
         } catch (error) {
             console.error(error);
              toast({

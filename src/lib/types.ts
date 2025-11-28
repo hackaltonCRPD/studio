@@ -1,4 +1,5 @@
 
+
 export type UserRole = "reporter" | "finder" | "rc_staff" | "police" | "admin";
 
 export type UserStatus = "active" | "suspended" | "archived";
@@ -44,6 +45,8 @@ export type Enquiry = {
   userId: string;
   date: string;
   status: "open" | "resolved";
+  name?: string;
+  email?: string;
 };
 
 export type ActivityLog = {
