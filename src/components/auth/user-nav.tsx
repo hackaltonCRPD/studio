@@ -20,8 +20,6 @@ import type { User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signOut } from "firebase/auth";
-import { auth } from "@/firebase";
 
 export function UserNav({ user }: { user: User | null }) {
   const { toast } = useToast();
@@ -38,12 +36,13 @@ export function UserNav({ user }: { user: User | null }) {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logoutUser();
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
       });
       router.push("/login");
+      router.refresh();
     } catch (error) {
        toast({
         variant: "destructive",

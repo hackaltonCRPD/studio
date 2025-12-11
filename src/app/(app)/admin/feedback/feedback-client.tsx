@@ -32,8 +32,6 @@ import { useState } from "react";
 import type { Feedback, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/firebase";
 
 interface FeedbackClientProps {
     initialFeedback: Feedback[];
@@ -51,8 +49,12 @@ export function FeedbackClient({ initialFeedback, users }: FeedbackClientProps) 
 
   const handleStatusChange = async (id: string, newStatus: "open" | "resolved") => {
     try {
-        const feedbackRef = doc(db, "feedback", id);
-        await updateDoc(feedbackRef, { status: newStatus });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/feedback/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) throw new Error("Failed to update status");
 
         setFeedbackItems(feedbackItems.map(f => f.id === id ? { ...f, status: newStatus } : f));
         toast({

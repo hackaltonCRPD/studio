@@ -1,7 +1,5 @@
 
 
-'use client';
-
 import {
   Activity,
   CreditCard,
@@ -31,41 +29,21 @@ import { getDocuments, getUsers } from "@/lib/data";
 import { getAuthenticatedUser } from "@/lib/auth";
 import type { DocumentReport, User } from "@/lib/types";
 import { redirect } from "next/navigation";
-import { useEffect, useState } from "react";
 
-export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [documents, setDocuments] = useState<DocumentReport[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+export default async function Dashboard() {
+  const user = await getAuthenticatedUser();
   
-  useEffect(() => {
-    async function loadDashboard() {
-      const authUser = await getAuthenticatedUser();
-      setUser(authUser);
-      if (!authUser) {
-        redirect('/login');
-        return;
-      }
-      
-      if (authUser.role === 'rc_staff') redirect('/rc-staff/dashboard');
-      if (authUser.role === 'police') redirect('/police/dashboard');
-
-      const [docs, usersList] = await Promise.all([
-        getDocuments(),
-        authUser.role === 'admin' ? getUsers() : Promise.resolve([])
-      ]);
-
-      setDocuments(docs);
-      setAllUsers(usersList);
-      setLoading(false);
-    }
-    loadDashboard();
-  }, []);
-
-  if (loading || !user) {
-    return <div>Loading dashboard...</div>;
+  if (!user) {
+    redirect('/login');
   }
+  
+  if (user.role === 'rc_staff') redirect('/rc-staff/dashboard');
+  if (user.role === 'police') redirect('/police/dashboard');
+
+  const [documents, allUsers] = await Promise.all([
+    getDocuments(),
+    user.role === 'admin' ? getUsers() : Promise.resolve([])
+  ]);
   
   const recentReports = documents.slice(0, 5);
   const isAdmin = user.role === 'admin';

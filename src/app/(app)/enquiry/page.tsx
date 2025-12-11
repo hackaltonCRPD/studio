@@ -24,9 +24,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Send } from "lucide-react"
-import { useAuth } from "@/firebase/auth/use-user"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore"
-import { db } from "@/firebase"
+import { getAuthenticatedUser } from "@/lib/auth"
+import { useEffect, useState } from "react"
+import type { User } from "@/lib/types"
+
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -37,26 +38,39 @@ const formSchema = z.object({
 
 export default function EnquiryPage() {
   const { toast } = useToast()
-  const { user } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    getAuthenticatedUser().then(setUser);
+  }, []);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: user?.displayName || "",
+      name: user?.name || "",
       email: user?.email || "",
       subject: "",
       question: "",
     },
   })
 
+  // Set form values once user is loaded
+  useEffect(() => {
+    if(user) {
+        form.setValue('name', user.name);
+        form.setValue('email', user.email);
+    }
+  }, [user, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await addDoc(collection(db, "enquiries"), {
-        ...values,
-        userId: user?.uid || null,
-        date: serverTimestamp(),
-        status: "open",
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/enquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...values, userId: user?.id || null }),
       });
+
+      if (!response.ok) throw new Error("Failed to submit enquiry");
 
       toast({
         title: "Enquiry Submitted",

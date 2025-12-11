@@ -1,7 +1,5 @@
 
 
-'use client';
-
 import {
   Card,
   CardContent,
@@ -17,26 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
-import type { User, UserStatus } from "@/lib/types";
+import type { UserStatus } from "@/lib/types";
 import { ArrowLeft, Edit, FileText, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
 
 
-export default function UserDetailsPage({ params }: { params: { id: string } }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        getUserById(params.id).then(userData => {
-            setUser(userData);
-            setLoading(false);
-        });
-    }, [params.id]);
-
-    if (loading) {
-        return <div>Loading...</div>
-    }
+export default async function UserDetailsPage({ params }: { params: { id: string } }) {
+    const user = await getUserById(params.id);
 
     if (!user) {
         notFound();

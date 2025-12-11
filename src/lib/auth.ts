@@ -1,46 +1,34 @@
 
-'use client';
-import { auth } from '@/firebase';
 import type { User } from "@/lib/types";
-import { onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
 
-export function getAuthenticatedUser(): Promise<User | null> {
-  return new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      unsubscribe();
-      if (firebaseUser) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as Omit<User, 'id'>;
-            resolve({
-              id: firebaseUser.uid,
-              ...userData
-            });
-          } else {
-            // This case might happen if a user is authenticated but their Firestore document is missing.
-            // You might want to create it here, or just treat them as logged out.
-            resolve(null); 
-          }
-        } catch (error) {
-          console.error("Error fetching user data from Firestore:", error);
-          reject(error);
-        }
-      } else {
-        resolve(null);
-      }
-    }, reject);
-  });
+// This is a mock implementation. In a real application, 
+// this would involve token validation and API calls to your auth server.
+
+const MOCK_USER: User = {
+    id: 'user1',
+    name: 'Admin User',
+    email: 'admin@docufind.com',
+    avatarUrl: 'https://images.unsplash.com/photo-1517462964-21fdcec3f25b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwZmFjZXxlbnwwfHx8fDE3NTg2OTUzNzh8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    role: 'admin',
+    status: 'active',
+    credibilityScore: 95,
+    createdAt: new Date().toISOString(),
+    phoneNumber: '123-456-7890',
+    preferredContactMethod: 'email',
+};
+
+
+export async function getAuthenticatedUser(): Promise<User | null> {
+  // In a real app, you'd get a JWT from cookies or local storage,
+  // validate it, and fetch the user profile from your backend.
+  // For now, we'll just return a mock user.
+  console.log("Authentication check: returning mock user.");
+  return Promise.resolve(MOCK_USER);
 }
 
 export async function logoutUser(): Promise<boolean> {
-    try {
-        await signOut(auth);
-        return true;
-    } catch (error) {
-        console.error("Error logging out:", error);
-        return false;
-    }
+    // In a real app, this would clear the auth token/cookie 
+    // and potentially call a logout endpoint.
+    console.log("User logged out.");
+    return Promise.resolve(true);
 }

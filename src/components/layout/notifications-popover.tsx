@@ -15,8 +15,6 @@ import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { Separator } from "../ui/separator";
-import { collection, onSnapshot, query, where, doc, updateDoc, writeBatch } from "firebase/firestore";
-import { db } from "@/firebase";
 
 export function NotificationsPopover({ user }: { user: User | null }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -24,13 +22,10 @@ export function NotificationsPopover({ user }: { user: User | null }) {
   
   useEffect(() => {
     if (user?.id) {
-        const q = query(collection(db, "notifications"), where("userId", "==", user.id));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const newNotifications = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data() } as Notification));
-            const sorted = newNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        getNotificationsForUser(user.id).then(data => {
+            const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             setNotifications(sorted);
         });
-        return () => unsubscribe();
     }
   }, [user?.id]);
   
@@ -39,26 +34,14 @@ export function NotificationsPopover({ user }: { user: User | null }) {
   const handleMarkAsRead = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-     try {
-        const notifRef = doc(db, "notifications", id);
-        await updateDoc(notifRef, { isRead: true });
-    } catch (error) {
-        console.error("Failed to mark as read", error);
-    }
+    // In a real app, this would be a fetch call to your backend
+    setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
   
   const handleMarkAllAsRead = async () => {
     if (!user || unreadCount === 0) return;
-    try {
-        const batch = writeBatch(db);
-        notifications.filter(n => !n.isRead).forEach(n => {
-          const notifRef = doc(db, "notifications", n.id);
-          batch.update(notifRef, { isRead: true });
-        });
-        await batch.commit();
-    } catch (error) {
-        console.error("Failed to mark all as read", error);
-    }
+    // In a real app, this would be a fetch call to your backend
+    setNotifications(notifications.map(n => ({...n, isRead: true})));
   }
 
   // When the popover opens, mark all notifications as read after a short delay

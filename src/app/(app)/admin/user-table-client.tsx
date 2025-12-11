@@ -29,10 +29,8 @@ import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/componentsui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
-import { updateDoc, doc } from "firebase/firestore";
-import { db } from "@/firebase";
 
 interface UserTableProps {
   initialUsers: User[];
@@ -56,8 +54,7 @@ export function UserTable({ initialUsers }: UserTableProps) {
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const credibilityMatch = user.credibilityScore >= credibilityFilter[0] && user.credibilityScore <= credibilityFilter[1];
-      // Server-side filters are already applied, so we just use the local state for further refinement if needed
-      // Or we can just rely on the server and remove client-side filtering
+      // Server-side filters are applied via page reload, so client-side filtering is for real-time adjustments
       return credibilityMatch;
     });
   }, [users, credibilityFilter]);
@@ -68,9 +65,13 @@ export function UserTable({ initialUsers }: UserTableProps) {
 
   const handleUserStatusChange = async (userId: string, newStatus: UserStatus) => {
     try {
-        const userRef = doc(db, "users", userId);
-        await updateDoc(userRef, { status: newStatus });
-
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) throw new Error("Failed to update user");
+        
         setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
         toast({
             title: "User Updated",

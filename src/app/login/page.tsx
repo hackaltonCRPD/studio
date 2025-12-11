@@ -1,14 +1,10 @@
 
-
 "use client"
 
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth, db } from "@/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,40 +20,21 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      // In a real app, this would be a fetch call to your Express backend
+      // For now, we'll simulate a successful login and redirect
+      console.log("Logging in with", email, password);
 
       toast({
         title: "Login Successful",
         description: `Welcome back!`,
       });
   
-      // Fetch user role to redirect
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const role = userDoc.exists() ? userDoc.data().role : "reporter";
-
-      let dashboardUrl = "/dashboard";
-      switch (role) {
-        case "rc_staff":
-          dashboardUrl = "/rc-staff/dashboard";
-          break;
-        case "police":
-          dashboardUrl = "/police/dashboard";
-          break;
-        case "admin":
-          dashboardUrl = "/dashboard";
-          break;
-        default:
-          dashboardUrl = "/dashboard";
-          break;
-      }
-  
-      router.push(dashboardUrl);
+      // This is a mock redirect. A real app would get the role from the API response
+      router.push("/dashboard");
 
     } catch (error: any) {
       console.error(error);
@@ -73,44 +50,14 @@ export default function LoginPage() {
 
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
-    const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        // New Google user, create a document in Firestore
-        await setDoc(userDocRef, {
-          name: user.displayName,
-          email: user.email,
-          avatarUrl: user.photoURL,
-          role: 'reporter', // Default role
-          status: 'active',
-          credibilityScore: 80,
-          createdAt: new Date().toISOString(),
-        });
-      }
-
+      // This would initiate an OAuth flow with your Express backend
+      console.log("Initiating Google Login");
       toast({
         title: "Login Successful",
-        description: `Welcome, ${user.displayName}!`,
+        description: `Welcome!`,
       });
-
-      const updatedUserDoc = await getDoc(userDocRef);
-      const role = updatedUserDoc.exists() ? updatedUserDoc.data().role : "reporter";
-
-      let dashboardUrl = "/dashboard";
-      switch (role) {
-        case "rc_staff": dashboardUrl = "/rc-staff/dashboard"; break;
-        case "police": dashboardUrl = "/police/dashboard"; break;
-        case "admin": dashboardUrl = "/dashboard"; break;
-        default: dashboardUrl = "/dashboard"; break;
-      }
-      router.push(dashboardUrl);
-
+      router.push('/dashboard');
     } catch (error: any) {
       console.error("Google Login Error:", error);
       toast({

@@ -5,41 +5,27 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Hand } from "lucide-react";
 import { useState } from "react";
-import { doc, updateDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
-import { db } from "@/firebase";
-import { useAuth } from "@/firebase/auth/use-user";
 
 export function ClaimButton({ documentId, ownerId }: { documentId: string, ownerId: string }) {
     const { toast } = useToast();
-    const { user } = useAuth();
     const [isClaimed, setIsClaimed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClaim = async () => {
-        if (!user) {
-            toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to claim an item." });
-            return;
-        }
+        // In a real app, you would get the current user's ID
+        const claimantId = "user2"; // Mock claimant
         setIsLoading(true);
         try {
-            // Update the document status to "claimed"
-            const docRef = doc(db, "documents", documentId);
-            await updateDoc(docRef, {
-                status: "claimed"
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}/claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ claimantId })
             });
 
-            // Create a notification for the RC Staff and the item owner
-            const notification = {
-                userId: ownerId, // Notify the person who reported it
-                title: "Your Item Has a Claim!",
-                description: `${user.displayName} has initiated a claim on your found item: ${documentId}. RC Staff will review and contact you.`,
-                timestamp: serverTimestamp(),
-                isRead: false,
-                link: `/documents/${documentId}`
-            };
-            await addDoc(collection(db, "notifications"), notification);
-            
-            // In a real app, you would also notify all RC Staff
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 throw new Error(errorData.message || 'Claim failed');
+            }
             
             setIsClaimed(true);
             toast({

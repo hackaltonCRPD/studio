@@ -40,10 +40,9 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon, Upload } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/firebase/auth/use-user"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore"
-import { db, storage } from "@/firebase"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getAuthenticatedUser } from "@/lib/auth"
+import { useEffect, useState } from "react"
+import type { User } from "@/lib/types"
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -58,7 +57,11 @@ const formSchema = z.object({
 
 export default function ReportDocumentPage() {
   const { toast } = useToast()
-  const { user } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    getAuthenticatedUser().then(setUser);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,20 +79,22 @@ export default function ReportDocumentPage() {
         return;
     }
     try {
-        let imageUrl: string | undefined = undefined;
-        if (values.file) {
-          const fileRef = ref(storage, `documents/${user.id}/${values.file.name}`);
-          const snapshot = await uploadBytes(fileRef, values.file);
-          imageUrl = await getDownloadURL(snapshot.ref);
-        }
-
-        await addDoc(collection(db, "documents"), {
-            ...values,
-            imageUrl,
-            file: undefined, // Don't store the file object itself
-            reportedBy: user.id, 
-            reportDate: serverTimestamp()
+        // In a real app, you would handle file uploads to a storage service (like S3)
+        // and then send the URL to your backend. Here we'll just send the form data.
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...values,
+                file: undefined, // Don't send file object
+                reportedBy: user.id,
+            }),
         });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Submission failed");
+        }
 
         toast({
             title: "Report Submitted",
@@ -97,12 +102,12 @@ export default function ReportDocumentPage() {
         });
         form.reset();
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
         toast({
             variant: "destructive",
             title: "Submission Failed",
-            description: "There was an error submitting your report. Please try again.",
+            description: error.message || "There was an error submitting your report. Please try again.",
         });
     }
   }

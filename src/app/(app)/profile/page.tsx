@@ -1,6 +1,5 @@
 
 
-'use client';
 import {
   Card,
   CardContent,
@@ -9,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "@/firebase/auth/use-user";
+import { getAuthenticatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -18,12 +17,8 @@ import { Mail, Phone, Edit } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
-export default function ProfilePage() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-      return <div>Loading profile...</div>;
-  }
+export default async function ProfilePage() {
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     redirect("/login");

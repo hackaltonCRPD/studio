@@ -1,15 +1,10 @@
 
-
 "use client"
 
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, db } from "@/firebase";
-import { setDoc, doc } from "firebase/firestore";
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Logo } from "@/components/icons"
@@ -40,45 +35,30 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                email,
+                password, // Note: In a real app, never send plain text passwords
+                role,
+                phoneNumber,
+                preferredContactMethod,
+            }),
+        });
 
-      await updateProfile(user, { displayName: name });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Sign up failed");
+        }
 
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        email,
-        role,
-        phoneNumber,
-        preferredContactMethod,
-        status: "active",
-        credibilityScore: 80,
-        createdAt: new Date().toISOString(),
-        avatarUrl: user.photoURL,
-      });
-      
       toast({
         title: "Account Created",
         description: `Welcome, ${name}! Your account is ready.`,
       });
-
-      let dashboardUrl = "/dashboard";
-      switch(role) {
-        case "rc_staff":
-          dashboardUrl = "/rc-staff/dashboard";
-          break;
-        case "police":
-          dashboardUrl = "/police/dashboard";
-          break;
-        case "admin":
-          dashboardUrl = "/dashboard";
-          break;
-        default:
-          dashboardUrl = "/dashboard";
-          break;
-      }
       
-      router.push(dashboardUrl);
+      router.push("/dashboard");
 
     } catch (error: any) {
       console.error(error);

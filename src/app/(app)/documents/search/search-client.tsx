@@ -1,5 +1,5 @@
 
-"use client"
+"use client";
 
 import {
   Table,
@@ -23,12 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { DocumentReport } from "@/lib/types";
+import type { DocumentReport, User } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { doc, updateDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
-import { db } from "@/firebase";
-import { useAuth } from "@/firebase/auth/use-user";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 interface SearchClientProps {
     initialDocuments: DocumentReport[];
@@ -38,7 +36,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { user } = useAuth();
+    const [user, setUser] = useState<User | null>(null);
     
     const [documents, setDocuments] = useState<DocumentReport[]>(initialDocuments);
     
@@ -49,6 +47,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     });
 
     useEffect(() => {
+        getAuthenticatedUser().then(setUser);
         setDocuments(initialDocuments);
     }, [initialDocuments]);
 
@@ -82,25 +81,20 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
         }
     }
 
-    const handleClaim = async (doc: DocumentReport) => {
+    const handleClaim = async (docToClaim: DocumentReport) => {
         if (!user) {
             toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to claim an item." });
             return;
         }
         try {
-            const docRef = doc(db, "documents", doc.id);
-            await updateDoc(docRef, { status: 'claimed' });
-
-             await addDoc(collection(db, "notifications"), {
-                userId: doc.reportedBy,
-                title: "Your Item Has a Claim!",
-                description: `${user.displayName} has claimed your found item: ${doc.documentType}. RC Staff will review the claim.`,
-                timestamp: serverTimestamp(),
-                isRead: false,
-                link: `/documents/${doc.id}`
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents/${docToClaim.id}/claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ claimantId: user.id })
             });
+            if (!response.ok) throw new Error("Failed to claim item");
             
-            setDocuments(documents.map(d => d.id === doc.id ? {...d, status: 'claimed'} : d));
+            setDocuments(documents.map(d => d.id === docToClaim.id ? {...d, status: 'claimed'} : d));
 
             toast({
                 title: 'Claim Initiated',

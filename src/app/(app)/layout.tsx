@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth, AuthProvider } from "@/firebase/auth/use-user";
 import type { User } from "@/lib/types";
 import { MainNav } from "@/components/layout/main-nav";
 import { UserNav } from "@/components/auth/user-nav";
@@ -19,20 +18,22 @@ import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { redirect } from "next/navigation";
+import { getAuthenticatedUser } from "@/lib/auth";
 
-function AppLayoutContent({
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
-  
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!loading && !user) {
-        redirect('/login');
-    }
-  }, [user, loading]);
+    getAuthenticatedUser().then(user => {
+        setUser(user);
+        setLoading(false);
+    });
+  }, []);
 
   if (loading) {
      return (
@@ -118,17 +119,4 @@ function AppLayoutContent({
       </div>
     </div>
   );
-}
-
-
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <AuthProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </AuthProvider>
-  )
 }
