@@ -24,17 +24,33 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // In a real app, this would be a fetch call to your Express backend
-      // For now, we'll simulate a successful login and redirect
-      console.log("Logging in with", email, password);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Assuming the backend returns a token
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
 
       toast({
         title: "Login Successful",
         description: `Welcome back!`,
       });
   
-      // This is a mock redirect. A real app would get the role from the API response
+      // Redirect to the dashboard
       router.push("/dashboard");
+      router.refresh();
 
     } catch (error: any) {
       console.error(error);
@@ -52,6 +68,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     try {
       // This would initiate an OAuth flow with your Express backend
+      // This is still a mock implementation
       console.log("Initiating Google Login");
       toast({
         title: "Login Successful",
@@ -123,7 +140,7 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || isGoogleLoading}>
+              <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || isGoogleLoading}>
                 {isGoogleLoading ? "..." : "Login with Google"}
               </Button>
             </form>
