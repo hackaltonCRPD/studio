@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { getNotificationsForUser, markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/data";
+import { getNotificationsForUser, markNotificationAsRead, markAllNotificationsAsRead } from "@/services/notificationService";
 import type { Notification, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";

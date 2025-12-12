@@ -1,9 +1,7 @@
 
 import type { DocumentReport } from '@/lib/types';
 
-const API_URL = typeof window === 'undefined' 
-    ? process.env.API_URL_INTERNAL
-    : process.env.NEXT_PUBLIC_API_URL;
+const API_URL = "http://localhost:5000/api";
 
 export async function getDocuments(filters?: { documentType?: string; location?: string; status?: string }): Promise<DocumentReport[]> {
     try {

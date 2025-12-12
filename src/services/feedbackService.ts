@@ -1,32 +1,47 @@
 
 import type { Feedback } from '@/lib/types';
 
-let feedbacks: Feedback[] = [
-    { id: 'fb1', subject: 'Great platform!', message: 'Found my passport in 2 days. Amazing!', userId: 'user2', date: new Date('2023-11-01').toISOString(), status: 'resolved' },
-    { id: 'fb2', subject: 'Suggestion for improvement', message: 'Could you add a map view for locations?', userId: 'user3', date: new Date('2023-11-05').toISOString(), status: 'open' },
-];
+const API_URL = typeof window === 'undefined'
+    ? process.env.API_URL_INTERNAL
+    : process.env.NEXT_PUBLIC_API_URL;
 
 export async function getFeedbacks(): Promise<Feedback[]> {
-    await new Promise(resolve => setTimeout(resolve, 50));
-    return Promise.resolve(feedbacks);
+    try {
+        const response = await fetch(`${API_URL}/feedback`);
+        if (!response.ok) {
+            console.error('Failed to fetch feedback', await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((f: any) => ({ ...f, id: f._id.toString() }));
+    } catch (error) {
+        console.error('Error fetching feedback:', error);
+        return [];
+    }
 }
 
 export async function createFeedback(feedbackData: Omit<Feedback, 'id' | 'date' | 'status'>): Promise<Feedback> {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const newFeedback: Feedback = {
-        ...feedbackData,
-        id: `fb${feedbacks.length + 1}`,
-        date: new Date().toISOString(),
-        status: 'open',
-    };
-    feedbacks.push(newFeedback);
-    return Promise.resolve(newFeedback);
+    const response = await fetch(`${API_URL}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to create feedback');
+    }
+    const data = await response.json();
+    return { ...data, id: data._id.toString() };
 }
 
 export async function updateFeedbackStatus(id: string, status: 'open' | 'resolved'): Promise<Feedback> {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    feedbacks = feedbacks.map(f => f.id === id ? { ...f, status } : f);
-    const updatedFeedback = feedbacks.find(f => f.id === id);
-    if (!updatedFeedback) throw new Error("Feedback not found");
-    return Promise.resolve(updatedFeedback);
+    const response = await fetch(`${API_URL}/feedback/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to update feedback status');
+    }
+    const data = await response.json();
+    return { ...data, id: data._id.toString() };
 }

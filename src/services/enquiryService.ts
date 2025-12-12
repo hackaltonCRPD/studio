@@ -1,32 +1,47 @@
 
 import type { Enquiry } from '@/lib/types';
 
-let enquiries: Enquiry[] = [
-    { id: 'enq1', subject: 'How do I claim an item?', question: 'I think I found my wallet, but I am not sure what the process is to claim it. Can you help?', userId: 'user3', date: new Date('2023-11-08').toISOString(), status: 'open', name: 'Jane Smith', email: 'jane.smith@example.com'},
-    { id: 'enq2', subject: 'Password Reset', question: 'I forgot my password and the reset link is not working.', userId: 'user2', date: new Date('2023-11-11').toISOString(), status: 'resolved', name: 'John Doe', email: 'john.doe@example.com' },
-];
+const API_URL = typeof window === 'undefined'
+    ? process.env.API_URL_INTERNAL
+    : process.env.NEXT_PUBLIC_API_URL;
 
 export async function getEnquiries(): Promise<Enquiry[]> {
-    await new Promise(resolve => setTimeout(resolve, 50));
-    return Promise.resolve(enquiries);
+    try {
+        const response = await fetch(`${API_URL}/enquiries`);
+        if (!response.ok) {
+            console.error('Failed to fetch enquiries', await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((e: any) => ({ ...e, id: e._id.toString() }));
+    } catch (error) {
+        console.error('Error fetching enquiries:', error);
+        return [];
+    }
 }
 
 export async function createEnquiry(enquiryData: Omit<Enquiry, 'id' | 'date' | 'status'>): Promise<Enquiry> {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const newEnquiry: Enquiry = {
-        ...enquiryData,
-        id: `enq${enquiries.length + 1}`,
-        date: new Date().toISOString(),
-        status: 'open',
-    };
-    enquiries.push(newEnquiry);
-    return Promise.resolve(newEnquiry);
+    const response = await fetch(`${API_URL}/enquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(enquiryData),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to create enquiry');
+    }
+    const data = await response.json();
+    return { ...data, id: data._id.toString() };
 }
 
 export async function updateEnquiryStatus(id: string, status: 'open' | 'resolved'): Promise<Enquiry> {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    enquiries = enquiries.map(e => e.id === id ? { ...e, status } : e);
-    const updatedEnquiry = enquiries.find(e => e.id === id);
-    if (!updatedEnquiry) throw new Error("Enquiry not found");
-    return Promise.resolve(updatedEnquiry);
+    const response = await fetch(`${API_URL}/enquiries/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to update enquiry status');
+    }
+    const data = await response.json();
+    return { ...data, id: data._id.toString() };
 }
