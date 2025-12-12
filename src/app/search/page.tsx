@@ -10,10 +10,14 @@ import { getDocuments } from "@/lib/data";
 import { SearchClient } from "./search-client";
 
 export default async function SearchDocumentsPage({ searchParams }: { searchParams?: { documentType?: string, q?: string, status?: string } }) {
+  const documentType = searchParams?.documentType;
+  const location = searchParams?.q;
+  const status = searchParams?.status;
+  
   const documents = await getDocuments({
-    documentType: searchParams?.documentType,
-    location: searchParams?.q,
-    status: searchParams?.status,
+    documentType,
+    location,
+    status,
   });
 
   return (
