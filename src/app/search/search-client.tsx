@@ -84,7 +84,11 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
 
     const handleClaim = async (docToClaim: DocumentReport) => {
         if (!user) {
-            router.push('/login');
+            toast({
+                title: "Login Required",
+                description: "You must be logged in to claim a document.",
+                action: <Button onClick={() => router.push('/login')}>Login</Button>
+            });
             return;
         }
         try {
