@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { claimDocument } from "@/services/documentService";
 import { Hand } from "lucide-react";
 import { useState } from "react";
 
@@ -16,16 +17,7 @@ export function ClaimButton({ documentId, ownerId }: { documentId: string, owner
         const claimantId = "user2"; // Mock claimant
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}/claim`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ claimantId })
-            });
-
-            if (!response.ok) {
-                 const errorData = await response.json();
-                 throw new Error(errorData.message || 'Claim failed');
-            }
+            await claimDocument(documentId, claimantId);
             
             setIsClaimed(true);
             toast({

@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
+import { updateUserStatus } from "@/services/userService";
 
 interface UserTableProps {
   initialUsers: User[];
@@ -65,13 +66,7 @@ export function UserTable({ initialUsers }: UserTableProps) {
 
   const handleUserStatusChange = async (userId: string, newStatus: UserStatus) => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
-        });
-        if (!response.ok) throw new Error("Failed to update user");
-        
+        await updateUserStatus(userId, newStatus);
         setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
         toast({
             title: "User Updated",

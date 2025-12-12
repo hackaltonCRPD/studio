@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { User, UserRole } from "@/lib/types";
 import Link from "next/link";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { updateUser } from "@/services/userService";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -66,12 +67,7 @@ export function EditUserForm({ userToEdit, currentUser }: EditUserFormProps) {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userToEdit.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
-            });
-            if (!response.ok) throw new Error("Failed to update user");
+            await updateUser(userToEdit.id, values);
 
             toast({
                 title: "User Updated",

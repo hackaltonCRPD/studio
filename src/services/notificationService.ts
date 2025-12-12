@@ -1,29 +1,39 @@
 
 import type { Notification } from '@/lib/types';
 
-// This remains a mocked service as there is no corresponding Express endpoint in the guide.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
-    console.log(`Fetching notifications for user ${userId} (mocked)`);
-    const notifications: Notification[] = [
-        {
-            id: '1',
-            userId: userId,
-            title: 'Welcome to DocuFind!',
-            description: 'Start by reporting a lost document or searching for one.',
-            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            isRead: false,
-            link: '/guide'
-        },
-        {
-            id: '2',
-            userId: userId,
-            title: 'Your document has a new claim',
-            description: 'Someone has claimed the passport you found. RC Staff will review it.',
-            timestamp: new Date().toISOString(),
-            isRead: true,
-            link: '/documents/doc2'
+    try {
+        const response = await fetch(`${API_URL}/notifications/user/${userId}`);
+        if (!response.ok) {
+            console.error('Failed to fetch notifications', await response.text());
+            return [];
         }
-    ];
-    // In a real app, you would filter this on the backend.
-    return Promise.resolve(notifications.filter(n => n.userId === userId));
+        const data = await response.json();
+        return data.map((n: any) => ({ ...n, id: n._id.toString() }));
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        return [];
+    }
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+    const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
+        method: 'PUT',
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to mark notification as read');
+    }
+}
+
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+    const response = await fetch(`${API_URL}/notifications/user/${userId}/read-all`, {
+        method: 'PUT',
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to mark all notifications as read');
+    }
 }

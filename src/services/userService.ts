@@ -33,3 +33,31 @@ export async function getUserById(id: string): Promise<User | null> {
         return null;
     }
 }
+
+export async function updateUser(id: string, userData: Partial<User>): Promise<User> {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update user');
+    }
+    const data = await response.json();
+    return { ...data, id: data._id.toString() };
+}
+
+export async function updateUserStatus(id: string, status: UserStatus): Promise<User> {
+    return updateUser(id, { status });
+}
+
+export async function deleteUser(id: string): Promise<void> {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete user');
+    }
+}

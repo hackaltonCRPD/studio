@@ -38,8 +38,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Upload } from "lucide-react";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
 import type { DocumentReport } from "@/lib/types";
+import { updateDocument } from "@/services/documentService";
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -73,12 +73,7 @@ export function EditDocumentForm({ document }: EditDocumentFormProps) {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const response = await fetch(`http://localhost:5000/api/documents/${document.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
-            });
-            if (!response.ok) throw new Error("Failed to update document");
+            await updateDocument(document.id, values);
 
             toast({
                 title: "Document Updated",

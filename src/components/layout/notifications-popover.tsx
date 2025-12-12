@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { getNotificationsForUser } from "@/lib/data";
+import { getNotificationsForUser, markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/data";
 import type { Notification, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -34,14 +34,22 @@ export function NotificationsPopover({ user }: { user: User | null }) {
   const handleMarkAsRead = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    // In a real app, this would be a fetch call to your backend
-    setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+    try {
+        await markNotificationAsRead(id);
+        setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch(error) {
+        console.error("Failed to mark as read:", error);
+    }
   };
   
   const handleMarkAllAsRead = async () => {
     if (!user || unreadCount === 0) return;
-    // In a real app, this would be a fetch call to your backend
-    setNotifications(notifications.map(n => ({...n, isRead: true})));
+    try {
+        await markAllNotificationsAsRead(user.id);
+        setNotifications(notifications.map(n => ({...n, isRead: true})));
+    } catch (error) {
+        console.error("Failed to mark all as read:", error);
+    }
   }
 
   // When the popover opens, mark all notifications as read after a short delay
@@ -53,7 +61,7 @@ export function NotificationsPopover({ user }: { user: User | null }) {
       return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, unreadCount]);
+  }, [isOpen]);
 
   const NotificationContent = ({ notification }: { notification: Notification }) => (
     <div 
