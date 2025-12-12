@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/card";
 import { getDocuments } from "@/lib/data";
 import { SearchClient } from "./search-client";
-import type { DocumentReport } from "@/lib/types";
 
 export default async function SearchDocumentsPage({ searchParams }: { searchParams?: { documentType?: string, q?: string, status?: string } }) {
   const documents = await getDocuments({

@@ -64,7 +64,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     } else {
         params.delete(queryParam);
     }
-    router.push(`/documents/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`);
   };
 
   const documentTypes = ["Passport", "Driver's License", "National ID", "Student ID", "Credit Card", "Other"];
@@ -84,7 +84,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
 
     const handleClaim = async (docToClaim: DocumentReport) => {
         if (!user) {
-            toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to claim an item." });
+            router.push('/login');
             return;
         }
         try {
@@ -181,7 +181,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
                 <TableCell>{doc.location}</TableCell>
                 <TableCell className="hidden md:table-cell">{new Date(doc.reportDate).toLocaleDateString()}</TableCell>
                 <TableCell>
-                    {doc.status === 'found' && user && user.id !== doc.reportedBy ? (
+                    {doc.status === 'found' ? (
                         <Button size="sm" onClick={() => handleClaim(doc)}>
                             <Hand className="mr-2 h-4 w-4" />
                             Claim

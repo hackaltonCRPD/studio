@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function AppLayout({
   children,
@@ -27,6 +28,7 @@ export default function AppLayout({
 }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     getAuthenticatedUser().then(user => {
@@ -34,6 +36,13 @@ export default function AppLayout({
         setLoading(false);
     });
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get('q') as string;
+    router.push(`/search?q=${query}`);
+  }
 
   if (loading) {
      return (
@@ -88,11 +97,12 @@ export default function AppLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <form>
+            <form onSubmit={handleSearchSubmit}>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
+                  name="q"
                   placeholder="Search documents..."
                   className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                 />
@@ -107,9 +117,8 @@ export default function AppLayout({
             </>
           ) : (
              <div className="flex items-center gap-4">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-9 w-9 rounded-full" />
+              <Button asChild><Link href="/login">Login</Link></Button>
+              <Button variant="outline" asChild><Link href="/signup">Sign Up</Link></Button>
             </div>
           )}
         </header>

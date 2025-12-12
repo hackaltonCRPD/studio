@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
     }
   },
   { href: "/documents/report", label: "Report Document", icon: FilePlus, allowedRoles: ["reporter", "finder", "admin", "rc_staff"] },
-  { href: "/documents/search", label: "Search Documents", icon: FileSearch, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
+  { href: "/search", label: "Search Documents", icon: FileSearch, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
   { href: "/match-finder", label: "Match Finder", icon: BrainCircuit, allowedRoles: ["admin", "rc_staff"] },
   { 
     href: "/admin", 
