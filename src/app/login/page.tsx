@@ -53,7 +53,6 @@ export default function LoginPage() {
       router.refresh();
 
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: "destructive",
         title: "Login Failed",
@@ -68,13 +67,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     try {
       // This would initiate an OAuth flow with your Express backend
-      // This is still a mock implementation
-      console.log("Initiating Google Login");
-      toast({
-        title: "Login Successful",
-        description: `Welcome!`,
-      });
-      router.push('/dashboard');
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
     } catch (error: any) {
       console.error("Google Login Error:", error);
       toast({
