@@ -27,6 +27,7 @@ import { Send } from "lucide-react"
 import { getAuthenticatedUser } from "@/lib/auth"
 import { useEffect, useState } from "react"
 import type { User } from "@/lib/types"
+import { createFeedback } from "@/services/feedbackService"
 
 const formSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters."),
@@ -55,16 +56,10 @@ export default function FeedbackPage() {
         return;
     }
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/feedback`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...values,
-                userId: user.id
-            }),
+        await createFeedback({
+            ...values,
+            userId: user.id
         });
-
-        if (!response.ok) throw new Error("Failed to submit feedback");
         
         toast({
         title: "Feedback Submitted",

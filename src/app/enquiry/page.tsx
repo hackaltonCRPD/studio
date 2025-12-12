@@ -27,6 +27,7 @@ import { Send } from "lucide-react"
 import { getAuthenticatedUser } from "@/lib/auth"
 import { useEffect, useState } from "react"
 import type { User } from "@/lib/types"
+import { createEnquiry } from "@/services/enquiryService"
 
 
 const formSchema = z.object({
@@ -64,13 +65,7 @@ export default function EnquiryPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/enquiries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, userId: user?.id || null }),
-      });
-
-      if (!response.ok) throw new Error("Failed to submit enquiry");
+      await createEnquiry({ ...values, userId: user?.id || 'anonymous' });
 
       toast({
         title: "Enquiry Submitted",

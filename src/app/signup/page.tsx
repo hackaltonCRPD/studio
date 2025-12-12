@@ -35,30 +35,15 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name,
-                email,
-                password, // Note: In a real app, never send plain text passwords
-                role,
-                phoneNumber,
-                preferredContactMethod,
-            }),
+        // This is a mock implementation
+        console.log("Signing up with", { name, email, role, phoneNumber, preferredContactMethod });
+
+        toast({
+            title: "Account Created",
+            description: `Welcome, ${name}! Your account is ready.`,
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Sign up failed");
-        }
-
-      toast({
-        title: "Account Created",
-        description: `Welcome, ${name}! Your account is ready.`,
-      });
-      
-      router.push("/dashboard");
+        
+        router.push("/dashboard");
 
     } catch (error: any) {
       console.error(error);
