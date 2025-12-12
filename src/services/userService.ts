@@ -1,7 +1,9 @@
 
 import type { User, UserRole, UserStatus } from '@/lib/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = typeof window === 'undefined'
+    ? process.env.API_URL_INTERNAL
+    : process.env.NEXT_PUBLIC_API_URL;
 
 export async function getUsers(filters?: { status?: UserStatus | 'all', role?: UserRole | 'all' }): Promise<User[]> {
     try {
@@ -14,7 +16,7 @@ export async function getUsers(filters?: { status?: UserStatus | 'all', role?: U
         const data = await response.json();
         return data.map((user: any) => ({ ...user, id: user._id.toString() }));
     } catch (error) {
-        if (error instanceof TypeError && error.message.includes('fetch failed')) {
+        if (error instanceof TypeError && (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED'))) {
             console.error('Error fetching users: Could not connect to the backend at', API_URL, '. Please ensure the backend server is running and accessible.');
         } else {
             console.error('An unexpected error occurred while fetching users:', error);
@@ -24,10 +26,15 @@ export async function getUsers(filters?: { status?: UserStatus | 'all', role?: U
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-    const response = await fetch(`${API_URL}/users/${id}`);
-    if (!response.ok) return null;
-    const data = await response.json();
-    return { ...data, id: data._id.toString() };
+    try {
+        const response = await fetch(`${API_URL}/users/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return null;
+    }
 }
 
 export async function updateUser(id: string, userData: Partial<Omit<User, 'id'>>): Promise<User> {
