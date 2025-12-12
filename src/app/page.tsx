@@ -84,7 +84,7 @@ export default function LandingPage() {
                     </Link>
                   </Button>
                    <Button size="lg" variant="outline" asChild>
-                     <Link href="/login">
+                     <Link href="/search">
                       Search for a Found Item
                     </Link>
                   </Button>
