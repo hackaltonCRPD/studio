@@ -1,5 +1,4 @@
 
-
 import {
   Card,
   CardContent,
@@ -8,16 +7,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getUserById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
-import type { UserStatus } from "@/lib/types";
+import type { User, UserStatus } from "@/lib/types";
 import { ArrowLeft, Edit, FileText, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
+
+const API_URL = process.env.API_URL_INTERNAL;
+
+async function getUserById(id: string): Promise<User | null> {
+    try {
+        const response = await fetch(`${API_URL}/users/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return null;
+    }
+}
 
 
 export default async function UserDetailsPage({ params }: { params: { id: string } }) {
@@ -134,3 +146,5 @@ export default async function UserDetailsPage({ params }: { params: { id: string
         </div>
     )
 }
+
+    

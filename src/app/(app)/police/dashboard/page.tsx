@@ -7,9 +7,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
-import { getDocuments } from "@/lib/data";
 import { PoliceDashboardClient } from "./police-dashboard-client";
 import type { DocumentReport } from "@/lib/types";
+
+const API_URL = process.env.API_URL_INTERNAL;
+
+async function getDocuments(filters?: { status?: string }): Promise<DocumentReport[]> {
+    try {
+        const query = new URLSearchParams(filters as Record<string, string>).toString();
+        const response = await fetch(`${API_URL}/documents?${query}`);
+        if (!response.ok) {
+            console.error('Failed to fetch documents', await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((doc: any) => ({ ...doc, id: doc._id.toString() }));
+    } catch (error) {
+        console.error('Error fetching documents:', error);
+        return [];
+    }
+}
 
 export default async function PoliceDashboardPage() {
   // In a real app, you'd fetch only escalated cases from a specific collection/field.
@@ -44,3 +61,5 @@ export default async function PoliceDashboardPage() {
     </div>
   );
 }
+
+    

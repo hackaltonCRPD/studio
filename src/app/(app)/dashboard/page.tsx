@@ -1,5 +1,4 @@
 
-
 import {
   Activity,
   CreditCard,
@@ -25,10 +24,42 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getDocuments, getUsers } from "@/lib/data";
 import { getAuthenticatedUser } from "@/lib/auth";
 import type { DocumentReport, User } from "@/lib/types";
 import { redirect } from "next/navigation";
+
+const API_URL = process.env.API_URL_INTERNAL;
+
+async function getDocuments(): Promise<DocumentReport[]> {
+    try {
+        const response = await fetch(`${API_URL}/documents`);
+        if (!response.ok) {
+            console.error('Failed to fetch documents', await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((doc: any) => ({ ...doc, id: doc._id.toString() }));
+    } catch (error) {
+        console.error('Error fetching documents:', error);
+        return [];
+    }
+}
+
+async function getUsers(): Promise<User[]> {
+    try {
+        const response = await fetch(`${API_URL}/users`);
+        if (!response.ok) {
+            console.error('Failed to fetch users', await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((user: any) => ({ ...user, id: user._id.toString() }));
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+    }
+}
+
 
 export default async function Dashboard() {
   const user = await getAuthenticatedUser();
@@ -91,7 +122,7 @@ export default async function Dashboard() {
                     <p className="text-xs text-muted-foreground">-1.2% from last week</p>
                 </CardContent>
                 </Card>
-                 <Link href="/documents/search">
+                 <Link href="/search">
                     <Card className="hover:bg-muted/50 transition-colors">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
@@ -151,7 +182,7 @@ export default async function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Link href="/documents/search">
+        <Link href="/search">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -167,7 +198,7 @@ export default async function Dashboard() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/documents/search?status=found">
+        <Link href="/search?status=found">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Documents Found</CardTitle>
@@ -181,7 +212,7 @@ export default async function Dashboard() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/documents/search?status=claimed">
+        <Link href="/search?status=claimed">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Documents Claimed</CardTitle>
@@ -241,3 +272,5 @@ export default async function Dashboard() {
     </div>
   );
 }
+
+    

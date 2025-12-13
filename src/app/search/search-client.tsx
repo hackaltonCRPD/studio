@@ -27,7 +27,8 @@ import type { DocumentReport, User } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { claimDocument } from "@/services/documentService";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface SearchClientProps {
     initialDocuments: DocumentReport[];
@@ -92,7 +93,16 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
             return;
         }
         try {
-            await claimDocument(docToClaim.id, user.id);
+            const response = await fetch(`${API_URL}/documents/${docToClaim.id}/claim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ claimantId: user.id }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to claim document');
+            }
             
             setDocuments(documents.map(d => d.id === docToClaim.id ? {...d, status: 'claimed'} : d));
 
@@ -213,3 +223,5 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     </>
   );
 }
+
+    

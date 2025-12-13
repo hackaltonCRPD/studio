@@ -27,7 +27,8 @@ import { Send } from "lucide-react"
 import { getAuthenticatedUser } from "@/lib/auth"
 import { useEffect, useState } from "react"
 import type { User } from "@/lib/types"
-import { createFeedback } from "@/services/feedbackService"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const formSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters."),
@@ -56,10 +57,15 @@ export default function FeedbackPage() {
         return;
     }
     try {
-        await createFeedback({
-            ...values,
-            userId: user.id
+        const feedbackData = { ...values, userId: user.id };
+        const response = await fetch(`${API_URL}/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(feedbackData),
         });
+        if (!response.ok) {
+            throw new Error('Failed to create feedback');
+        }
         
         toast({
         title: "Feedback Submitted",
@@ -127,3 +133,5 @@ export default function FeedbackPage() {
     </Card>
   )
 }
+
+    

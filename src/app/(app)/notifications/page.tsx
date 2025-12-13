@@ -1,9 +1,25 @@
 
 import { getAuthenticatedUser } from '@/lib/auth';
-import { getNotificationsForUser } from '@/lib/data';
 import type { Notification, User } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { NotificationsClient } from './notifications-client';
+
+const API_URL = process.env.API_URL_INTERNAL;
+
+async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+    try {
+        const response = await fetch(`${API_URL}/notifications/user/${userId}`);
+        if (!response.ok) {
+            console.error(`Failed to fetch notifications for user ${userId}`, await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((n: any) => ({ ...n, id: n._id.toString() }));
+    } catch (error) {
+        console.error(`Error fetching notifications for user ${userId}:`, error);
+        return [];
+    }
+}
 
 export default async function NotificationsPage() {
     const authUser = await getAuthenticatedUser();
@@ -22,3 +38,5 @@ export default async function NotificationsPage() {
         </div>
     );
 }
+
+    

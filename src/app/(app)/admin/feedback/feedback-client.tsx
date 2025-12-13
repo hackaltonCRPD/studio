@@ -32,7 +32,8 @@ import { useState } from "react";
 import type { Feedback, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { updateFeedbackStatus } from "@/services/feedbackService";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface FeedbackClientProps {
     initialFeedback: Feedback[];
@@ -50,7 +51,13 @@ export function FeedbackClient({ initialFeedback, users }: FeedbackClientProps) 
 
   const handleStatusChange = async (id: string, newStatus: "open" | "resolved") => {
     try {
-        await updateFeedbackStatus(id, newStatus);
+        const response = await fetch(`${API_URL}/feedback/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) throw new Error("Failed to update status");
+
         setFeedbackItems(feedbackItems.map(f => f.id === id ? { ...f, status: newStatus } : f));
         toast({
             title: "Feedback Updated",
@@ -156,3 +163,5 @@ export function FeedbackClient({ initialFeedback, users }: FeedbackClientProps) 
     </>
   );
 }
+
+    

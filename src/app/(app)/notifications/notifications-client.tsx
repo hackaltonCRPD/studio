@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { markNotificationAsRead, markAllNotificationsAsRead } from '@/services/notificationService';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface NotificationsClientProps {
     initialNotifications: Notification[];
@@ -22,7 +23,8 @@ export function NotificationsClient({ initialNotifications, user, unreadCount: i
 
     const handleMarkAsRead = async (id: string) => {
         try {
-            await markNotificationAsRead(id);
+            const response = await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PUT' });
+            if (!response.ok) throw new Error('Failed to mark notification as read');
             setNotifications(notifications.map(n => {
                 if (n.id === id && !n.isRead) {
                     setUnreadCount(prev => prev - 1);
@@ -38,7 +40,8 @@ export function NotificationsClient({ initialNotifications, user, unreadCount: i
     const handleMarkAllAsRead = async () => {
         if (!user || unreadCount === 0) return;
         try {
-            await markAllNotificationsAsRead(user.id);
+            const response = await fetch(`${API_URL}/notifications/user/${user.id}/read-all`, { method: 'PUT' });
+            if (!response.ok) throw new Error('Failed to mark all notifications as read');
             setNotifications(notifications.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (error) {
@@ -112,3 +115,5 @@ export function NotificationsClient({ initialNotifications, user, unreadCount: i
         </>
     );
 }
+
+    

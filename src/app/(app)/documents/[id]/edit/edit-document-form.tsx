@@ -36,10 +36,12 @@ import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Upload } from "lucide-react";
+import { Calendar as CalendarIcon, Upload } from "lucide-react";
 import { format } from "date-fns";
 import type { DocumentReport } from "@/lib/types";
-import { updateDocument } from "@/services/documentService";
+import { Calendar } from "@/components/ui/calendar";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const formSchema = z.object({
   documentType: z.string().min(1, "Document type is required."),
@@ -73,7 +75,12 @@ export function EditDocumentForm({ document }: EditDocumentFormProps) {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            await updateDocument(document.id, values);
+            const response = await fetch(`${API_URL}/documents/${document.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values),
+            });
+            if (!response.ok) throw new Error("Failed to update document");
 
             toast({
                 title: "Document Updated",
@@ -257,3 +264,5 @@ export function EditDocumentForm({ document }: EditDocumentFormProps) {
         </Form>
     )
 }
+
+    

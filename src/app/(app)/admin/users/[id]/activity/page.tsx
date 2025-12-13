@@ -14,12 +14,42 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getUserById, getActivityLogsForUser } from "@/lib/data";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Info, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import type { User, ActivityLog } from "@/lib/types";
+
+const API_URL = process.env.API_URL_INTERNAL;
+
+async function getUserById(id: string): Promise<User | null> {
+    try {
+        const response = await fetch(`${API_URL}/users/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return null;
+    }
+}
+
+async function getActivityLogsForUser(userId: string): Promise<ActivityLog[]> {
+    try {
+        const response = await fetch(`${API_URL}/users/${userId}/activity`);
+        if (!response.ok) {
+            console.error(`Failed to fetch activity logs for user ${userId}`, await response.text());
+            return [];
+        }
+        const data = await response.json();
+        return data.map((log: any) => ({ ...log, id: log._id.toString() }));
+    } catch (error) {
+        console.error(`Error fetching activity logs for user ${userId}:`, error);
+        return [];
+    }
+}
+
 
 export default async function ActivityLogPage({ params }: { params: { id: string } }) {
   const [user, logs] = await Promise.all([
@@ -102,3 +132,5 @@ export default async function ActivityLogPage({ params }: { params: { id: string
     </div>
   );
 }
+
+    

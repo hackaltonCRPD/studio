@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getDocumentById, getUserById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +16,34 @@ import { ArrowLeft, Calendar, MapPin, User as UserIcon, File as FileIcon, Edit, 
 import { Separator } from "@/components/ui/separator";
 import { ClaimButton } from "./claim-button";
 import { getAuthenticatedUser } from "@/lib/auth";
+import type { DocumentReport, User } from "@/lib/types";
+
+const API_URL = process.env.API_URL_INTERNAL;
+
+async function getDocumentById(id: string): Promise<DocumentReport | null> {
+    try {
+        const response = await fetch(`${API_URL}/documents/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching document ${id}:`, error);
+        return null;
+    }
+}
+
+async function getUserById(id: string): Promise<User | null> {
+    try {
+        const response = await fetch(`${API_URL}/users/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return null;
+    }
+}
+
 
 export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
   const document = await getDocumentById(params.id);
@@ -65,7 +92,7 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
     <div className="space-y-6">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" className="h-7 w-7" asChild>
-              <Link href="/documents/search">
+              <Link href="/search">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Back</span>
               </Link>
@@ -174,3 +201,5 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
     </div>
   );
 }
+
+    
