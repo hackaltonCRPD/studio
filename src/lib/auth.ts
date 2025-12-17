@@ -21,14 +21,21 @@ const MOCK_USER: User = {
 export async function getAuthenticatedUser(): Promise<User | null> {
   // In a real app, you'd get a JWT from cookies or local storage,
   // validate it, and fetch the user profile from your backend.
-  // For now, we'll just return a mock user.
-  console.log("Authentication check: returning mock user.");
-  return Promise.resolve(MOCK_USER);
+  // For now, we'll check for a mock token.
+  if (typeof window !== 'undefined' && localStorage.getItem('authToken')) {
+      console.log("Authentication check: returning mock user.");
+      return Promise.resolve(MOCK_USER);
+  }
+  console.log("Authentication check: no token found, returning null.");
+  return Promise.resolve(null);
 }
 
 export async function logoutUser(): Promise<boolean> {
     // In a real app, this would clear the auth token/cookie 
     // and potentially call a logout endpoint.
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+    }
     console.log("User logged out.");
     return Promise.resolve(true);
 }

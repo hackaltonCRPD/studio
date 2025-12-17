@@ -1,5 +1,5 @@
 
-"use client";
+"use client"
 
 import {
   Table,
@@ -38,9 +38,9 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const [user, setUser] = useState<User | null>(null);
     
     const [documents, setDocuments] = useState<DocumentReport[]>(initialDocuments);
+    const [user, setUser] = useState<User | null>(null);
     
     const [filters, setFilters] = useState({
         documentType: searchParams.get('documentType') || "all",
@@ -49,20 +49,24 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     });
 
     useEffect(() => {
-        getAuthenticatedUser().then(setUser);
         setDocuments(initialDocuments);
     }, [initialDocuments]);
+
+    useEffect(() => {
+        getAuthenticatedUser().then(setUser);
+    }, []);
 
 
   const handleFilterChange = (filterName: string, value: string) => {
     const newFilters = { ...filters, [filterName]: value };
     setFilters(newFilters);
     
-    const params = new URLSearchParams(searchParams.toString());
-    const queryParam = filterName === 'location' ? 'q' : filterName;
+    const params = new URLSearchParams(searchParams);
     if (value && value !== 'all') {
+        const queryParam = filterName === 'location' ? 'q' : filterName;
         params.set(queryParam, value);
     } else {
+        const queryParam = filterName === 'location' ? 'q' : filterName;
         params.delete(queryParam);
     }
     router.push(`/search?${params.toString()}`);
@@ -83,17 +87,14 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
         }
     }
 
-    const handleClaim = async (docToClaim: DocumentReport) => {
+    const handleClaim = async (docId: string) => {
         if (!user) {
-            toast({
-                title: "Login Required",
-                description: "You must be logged in to claim a document.",
-                action: <Button onClick={() => router.push('/login')}>Login</Button>
-            });
+            router.push('/login');
             return;
         }
+
         try {
-            const response = await fetch(`${API_URL}/documents/${docToClaim.id}/claim`, {
+            const response = await fetch(`${API_URL}/documents/${docId}/claim`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ claimantId: user.id }),
@@ -101,10 +102,11 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to claim document');
+                throw new Error(errorData.message || 'Failed to claim document.');
             }
             
-            setDocuments(documents.map(d => d.id === docToClaim.id ? {...d, status: 'claimed'} : d));
+            // Optimistically update the UI
+            setDocuments(documents.map(doc => doc.id === docId ? {...doc, status: 'claimed'} : doc));
 
             toast({
                 title: 'Claim Initiated',
@@ -123,7 +125,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     <>
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <Input
-            placeholder="Search by location..."
+            placeholder="Search by location, description, etc..."
             value={filters.location}
             onChange={(e) => handleFilterChange("location", e.target.value)}
             className="w-full sm:max-w-sm"
@@ -196,7 +198,7 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
                 <TableCell className="hidden md:table-cell">{new Date(doc.reportDate).toLocaleDateString()}</TableCell>
                 <TableCell>
                     {doc.status === 'found' ? (
-                        <Button size="sm" onClick={() => handleClaim(doc)}>
+                        <Button size="sm" onClick={() => handleClaim(doc.id)}>
                             <Hand className="mr-2 h-4 w-4" />
                             Claim
                         </Button>
@@ -223,5 +225,3 @@ export function SearchClient({ initialDocuments }: SearchClientProps) {
     </>
   );
 }
-
-    

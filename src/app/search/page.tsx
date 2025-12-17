@@ -6,41 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getDocuments } from "@/lib/data";
 import { SearchClient } from "./search-client";
-import type { DocumentReport } from "@/lib/types";
 
-const API_URL = process.env.API_URL_INTERNAL;
+export default async function SearchDocumentsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
 
-async function getDocuments(filters?: { documentType?: string, location?: string, status?: string }): Promise<DocumentReport[]> {
-    try {
-        const query = new URLSearchParams(filters as Record<string, string>).toString();
-        const response = await fetch(`${API_URL}/documents?${query}`);
-        if (!response.ok) {
-            console.error('Failed to fetch documents', await response.text());
-            return [];
-        }
-        const data = await response.json();
-        return data.map((doc: any) => ({ ...doc, id: doc._id.toString() }));
-    } catch (error) {
-        if (error instanceof TypeError && (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED'))) {
-            console.error('Error fetching documents: Could not connect to the backend at', API_URL, '. Please ensure the backend server is running and accessible.');
-        } else {
-            console.error('An unexpected error occurred while fetching documents:', error);
-        }
-        return [];
-    }
-}
+  const filters = {
+    documentType: typeof searchParams.documentType === 'string' ? searchParams.documentType : undefined,
+    location: typeof searchParams.q === 'string' ? searchParams.q : undefined,
+    status: typeof searchParams.status === 'string' ? searchParams.status : undefined,
+  };
 
-export default async function SearchDocumentsPage({ searchParams }: { searchParams?: { documentType?: string, q?: string, status?: string } }) {
-  const documentType = searchParams?.documentType;
-  const location = searchParams?.q;
-  const status = searchParams?.status;
-  
-  const documents = await getDocuments({
-    documentType,
-    location,
-    status,
-  });
+  const documents = await getDocuments(filters);
 
   return (
     <Card>
@@ -56,5 +33,3 @@ export default async function SearchDocumentsPage({ searchParams }: { searchPara
     </Card>
   );
 }
-
-    

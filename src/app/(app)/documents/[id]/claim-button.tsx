@@ -4,24 +4,36 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Hand } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAuthenticatedUser } from "@/lib/auth";
+import type { User } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export function ClaimButton({ documentId, ownerId }: { documentId: string, ownerId: string }) {
+export function ClaimButton({ documentId }: { documentId: string }) {
     const { toast } = useToast();
+    const router = useRouter();
+    const [user, setUser] = useState<User | null>(null);
     const [isClaimed, setIsClaimed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    useEffect(() => {
+        getAuthenticatedUser().then(setUser);
+    }, []);
+
     const handleClaim = async () => {
-        // In a real app, you would get the current user's ID
-        const claimantId = "user2"; // Mock claimant
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        
         setIsLoading(true);
         try {
             const response = await fetch(`${API_URL}/documents/${documentId}/claim`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ claimantId }),
+                body: JSON.stringify({ claimantId: user.id }),
             });
 
             if (!response.ok) {
@@ -56,5 +68,3 @@ export function ClaimButton({ documentId, ownerId }: { documentId: string, owner
         </Button>
     );
 }
-
-    

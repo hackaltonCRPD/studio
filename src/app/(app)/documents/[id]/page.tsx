@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { ClaimButton } from "./claim-button";
 import { getAuthenticatedUser } from "@/lib/auth";
 import type { DocumentReport, User } from "@/lib/types";
+import { format } from "date-fns";
 
 const API_URL = process.env.API_URL_INTERNAL;
 
@@ -57,13 +58,9 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
     getAuthenticatedUser()
   ]);
 
-  if (!currentUser) {
-    return <div>Please log in to view this page.</div>
-  }
-
-  const isAdmin = currentUser.role === 'admin';
-  const isPolice = currentUser.role === 'police';
-  const isOwner = currentUser.id === document.reportedBy;
+  const isAdmin = currentUser?.role === 'admin';
+  const isPolice = currentUser?.role === 'police';
+  const isOwner = currentUser?.id === document.reportedBy;
   const canEdit = isAdmin || isOwner;
   const canClaim = document.status === 'found' && !isOwner;
 
@@ -110,7 +107,7 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
                         </Link>
                     </Button>
                 )}
-                 {canClaim && <ClaimButton documentId={document.id} ownerId={document.reportedBy} />}
+                 {canClaim && <ClaimButton documentId={document.id} />}
             </div>
         </div>
         <Card>
@@ -201,5 +198,3 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
     </div>
   );
 }
-
-    
