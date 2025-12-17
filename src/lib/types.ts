@@ -27,6 +27,14 @@ export type DocumentReport = {
   reportedBy: string; // User ID
   imageUrl?: string;
   reportDate: string;
+  claims: Claim[];
+};
+
+export type Claim = {
+    _id: string;
+    claimant: User;
+    status: "pending" | "approved" | "rejected";
+    claimDate: string;
 };
 
 export type Feedback = {

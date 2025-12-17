@@ -14,6 +14,7 @@ import {
   HelpCircle,
   BookUser,
   Bell,
+  Hand,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ const navItems: NavItem[] = [
   },
   { href: "/documents/report", label: "Report Document", icon: FilePlus, allowedRoles: ["reporter", "finder", "admin", "rc_staff"] },
   { href: "/search", label: "Search Documents", icon: FileSearch, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
+  { href: "/claims", label: "Manage Claims", icon: Hand, allowedRoles: ["admin", "rc_staff", "police"] },
   { href: "/match-finder", label: "Match Finder", icon: BrainCircuit, allowedRoles: ["admin", "rc_staff"] },
   { 
     href: "/admin", 
