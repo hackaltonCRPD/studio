@@ -1,11 +1,11 @@
 
-
 export type UserRole = "reporter" | "finder" | "rc_staff" | "police" | "admin";
 
 export type UserStatus = "active" | "suspended" | "archived";
 
 export type User = {
   id: string;
+  _id: string; // Keep _id for backend consistency
   name: string;
   email: string;
   avatarUrl?: string;
@@ -35,6 +35,7 @@ export type Claim = {
     claimant: User;
     status: "pending" | "approved" | "rejected";
     claimDate: string;
+    notes?: string;
 };
 
 export type Feedback = {

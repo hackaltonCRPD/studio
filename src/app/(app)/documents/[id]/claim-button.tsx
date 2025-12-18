@@ -11,20 +11,23 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export function ClaimButton({ documentId }: { documentId: string }) {
+export function ClaimButton({ documentId, initialIsClaimedByCurrentUser }: { documentId: string, initialIsClaimedByCurrentUser: boolean }) {
     const { toast } = useToast();
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
-    const [isClaimed, setIsClaimed] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isClaimed, setIsClaimed] = useState(initialIsClaimedByCurrentUser);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getAuthenticatedUser().then(setUser);
+        getAuthenticatedUser().then(u => {
+            setUser(u);
+            setIsLoading(false);
+        });
     }, []);
 
     const handleClaim = async () => {
         if (!user) {
-            router.push('/login');
+            router.push('/login?redirect=/documents/' + documentId);
             return;
         }
         
@@ -59,12 +62,12 @@ export function ClaimButton({ documentId }: { documentId: string }) {
     };
 
     if (isClaimed) {
-        return <Button size="sm" disabled>Claimed</Button>
+        return <Button size="sm" disabled>Claim Pending</Button>
     }
 
     return (
         <Button size="sm" onClick={handleClaim} disabled={isLoading}>
-            {isLoading ? "Claiming..." : <><Hand className="mr-2 h-4 w-4" /> Claim This Item</>}
+            {isLoading ? "Loading..." : <><Hand className="mr-2 h-4 w-4" /> Claim This Item</>}
         </Button>
     );
 }

@@ -2,31 +2,15 @@
 "use client"
 
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  email: z.string().email("Please enter a valid email address."),
-  phoneNumber: z.string().optional(),
-  preferredContactMethod: z.enum(["email", "phone"]).optional(),
-});
 
 interface EditProfileFormProps {
     user: User;
@@ -35,119 +19,127 @@ interface EditProfileFormProps {
 export function EditProfileForm({ user }: EditProfileFormProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: user.name,
-            email: user.email,
-            phoneNumber: user.phoneNumber || "",
-            preferredContactMethod: user.preferredContactMethod || "email",
-        },
-    });
+    const [name, setName] = useState(user.name);
+    const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || "");
+    const [preferredContactMethod, setPreferredContactMethod] = useState(user.preferredContactMethod || "email");
+    const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        try {
-            const response = await fetch(`${API_URL}/users/${user.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
-            });
-            if (!response.ok) throw new Error("Failed to update user");
-
-            toast({
-                title: "Profile Updated",
-                description: "Your profile has been successfully updated.",
-            });
-            router.refresh();
-        } catch (error) {
-            console.error(error);
-             toast({
-                variant: "destructive",
-                title: "Update Failed",
-                description: "Could not update your profile.",
-            });
+    const validate = () => {
+        const newErrors: { name?: string } = {};
+        if (name.length < 2) {
+            newErrors.name = "Name must be at least 2 characters.";
         }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!validate()) {
+            return;
+        }
+
+        const changes: Partial<User> = {};
+        if (name !== user.name) changes.name = name;
+        if (phoneNumber !== (user.phoneNumber || "")) changes.phoneNumber = phoneNumber;
+        if (preferredContactMethod !== (user.preferredContactMethod || "email")) changes.preferredContactMethod = preferredContactMethod;
+        
+        if (Object.keys(changes).length === 0) {
+            toast({
+                title: "No Changes",
+                description: "You haven't made any changes to your profile.",
+            });
+            return;
+        }
+
+        startTransition(async () => {
+            try {
+                const response = await fetch(`${API_URL}/users/${user.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(changes),
+                });
+                if (!response.ok) throw new Error("Failed to update user");
+
+                toast({
+                    title: "Profile Updated",
+                    description: "Your profile has been successfully updated.",
+                });
+                router.refresh();
+            } catch (error) {
+                console.error(error);
+                toast({
+                    variant: "destructive",
+                    title: "Update Failed",
+                    description: "Could not update your profile.",
+                });
+            }
+        });
     }
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
-                 <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Full Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="John Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
+            <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                    id="name"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={isPending}
                 />
-                <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                                <Input type="email" placeholder="name@example.com" {...field} disabled />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+                {errors.name && <p className="text-sm font-medium text-destructive">{errors.name}</p>}
+            </div>
+            
+            <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={user.email}
+                    disabled
                 />
-                <FormField
-                    control={form.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                                <Input type="tel" placeholder="123-456-7890" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                    id="phoneNumber"
+                    type="tel"
+                    placeholder="123-456-7890"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={isPending}
                 />
-                <FormField
-                    control={form.control}
-                    name="preferredContactMethod"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                        <FormLabel>Preferred Contact Method</FormLabel>
-                        <FormControl>
-                            <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-row space-x-4"
-                            >
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="email" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Email</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="phone" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Phone</FormLabel>
-                            </FormItem>
-                            </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <div className="flex justify-start">
-                    <Button type="submit">Save Changes</Button>
-                </div>
-            </form>
-        </Form>
+            </div>
+
+            <div className="space-y-3">
+                <Label>Preferred Contact Method</Label>
+                <RadioGroup
+                    onValueChange={(value: "email" | "phone") => setPreferredContactMethod(value)}
+                    value={preferredContactMethod}
+                    className="flex flex-row space-x-4"
+                    disabled={isPending}
+                >
+                    <div className="flex items-center space-x-2 space-y-0">
+                        <RadioGroupItem value="email" id="email"/>
+                        <Label htmlFor="email" className="font-normal">Email</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 space-y-0">
+                        <RadioGroupItem value="phone" id="phone" />
+                        <Label htmlFor="phone" className="font-normal">Phone</Label>
+                    </div>
+                </RadioGroup>
+            </div>
+            
+            <div className="flex justify-start">
+                <Button type="submit" disabled={isPending}>
+                    {isPending ? "Saving..." : "Save Changes"}
+                </Button>
+            </div>
+        </form>
     )
 }
-
-    

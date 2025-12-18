@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -84,9 +83,10 @@ export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<
         }
 
         const href = item.roleSpecificHref?.[userRole] || item.href;
+        const key = `${item.href}-${item.label}`;
 
         return item.subItems && userRole === 'admin' ? (
-            <Accordion key={item.href} type="single" collapsible defaultValue={isAdminPath ? "admin-main" : ""}>
+            <Accordion key={key} type="single" collapsible defaultValue={isAdminPath ? "admin-main" : ""}>
               <AccordionItem value="admin-main" className="border-b-0">
                 <AccordionTrigger className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:no-underline",
@@ -100,7 +100,7 @@ export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<
                 <AccordionContent className="pl-4 pt-1">
                   {item.subItems.map(subItem => (
                     <Link
-                      key={subItem.href}
+                      key={`${subItem.href}-${subItem.label}`}
                       href={subItem.href}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
@@ -117,7 +117,7 @@ export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<
           ) : (
              (!item.subItems || userRole !== 'admin') &&
              <Link
-                key={href}
+                key={key}
                 href={href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",

@@ -22,8 +22,9 @@ import { format } from "date-fns";
 const API_URL = process.env.API_URL_INTERNAL;
 
 async function getDocumentById(id: string): Promise<DocumentReport | null> {
+    if (!API_URL) return null;
     try {
-        const response = await fetch(`${API_URL}/documents/${id}`);
+        const response = await fetch(`${API_URL}/documents/${id}`, { cache: 'no-store' });
         if (!response.ok) return null;
         const data = await response.json();
         return { ...data, id: data._id.toString() };
@@ -34,6 +35,7 @@ async function getDocumentById(id: string): Promise<DocumentReport | null> {
 }
 
 async function getUserById(id: string): Promise<User | null> {
+    if (!API_URL) return null;
     try {
         const response = await fetch(`${API_URL}/users/${id}`);
         if (!response.ok) return null;
@@ -54,7 +56,7 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
   }
 
   const [reportedByUser, currentUser] = await Promise.all([
-    getUserById(document.reportedBy),
+    document.reportedBy ? getUserById(document.reportedBy) : Promise.resolve(null),
     getAuthenticatedUser()
   ]);
 
@@ -79,11 +81,11 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
 
   const canViewPhoneNumber = () => {
     if (!reportedByUser) return false;
-    // Police role in the document, not current user
-    if (reportedByUser.role === 'police') return true; 
     if (isAdmin || isPolice) return true;
     return false;
   }
+  
+  const isClaimedByCurrentUser = document.claims?.some(claim => claim.claimant._id === currentUser?.id && claim.status === 'pending');
 
   return (
     <div className="space-y-6">
@@ -107,7 +109,7 @@ export default async function DocumentDetailsPage({ params }: { params: { id: st
                         </Link>
                     </Button>
                 )}
-                 {canClaim && <ClaimButton documentId={document.id} />}
+                 {canClaim && <ClaimButton documentId={document.id} initialIsClaimedByCurrentUser={isClaimedByCurrentUser}/>}
             </div>
         </div>
         <Card>

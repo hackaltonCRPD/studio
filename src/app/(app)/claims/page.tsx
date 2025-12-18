@@ -15,14 +15,15 @@ import { redirect } from "next/navigation";
 const API_URL = process.env.API_URL_INTERNAL;
 
 async function getPendingClaims(): Promise<DocumentReport[]> {
+    if (!API_URL) return [];
     try {
-        const response = await fetch(`${API_URL}/documents?status=claimed`);
+        // Fetch documents that have pending claims. The backend should filter these.
+        const response = await fetch(`${API_URL}/documents?hasPendingClaims=true`, { cache: 'no-store' });
         if (!response.ok) {
             console.error('Failed to fetch documents with pending claims', await response.text());
             return [];
         }
         const data = await response.json();
-        // The backend should ideally populate claimant info, but we'll fetch it if needed.
         return data.map((doc: any) => ({ ...doc, id: doc._id.toString() }));
     } catch (error) {
         console.error('Error fetching documents with pending claims:', error);
@@ -32,9 +33,10 @@ async function getPendingClaims(): Promise<DocumentReport[]> {
 
 export default async function ClaimsPage() {
     const user = await getAuthenticatedUser();
-    if (!user) {
-        redirect('/login');
+    if (!user || !['admin', 'rc_staff', 'police'].includes(user.role)) {
+        redirect('/dashboard');
     }
+    
     const claims = await getPendingClaims();
     
     return (
