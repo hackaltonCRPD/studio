@@ -1,7 +1,4 @@
 
-
-"use client";
-
 import {
   Card,
   CardContent,
@@ -10,62 +7,64 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getDocumentById, getUserById } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, User, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User as UserIcon, File as FileIcon, Edit, ShieldCheck, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { ClaimButton } from "./claim-button";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { useEffect, useState } from "react";
-import type { DocumentReport, User as UserType } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
+import type { DocumentReport, User } from "@/lib/types";
+import { format } from "date-fns";
 
-export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const [document, setDocument] = useState<DocumentReport | null>(null);
-  const [reportedByUser, setReportedByUser] = useState<UserType | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+const API_URL = process.env.API_URL_INTERNAL;
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      setIsLoading(true);
-      const doc = await getDocumentById(params.id);
-      if (!doc) {
-        setIsLoading(false);
-        notFound();
-        return;
-      }
-      setDocument(doc);
+async function getDocumentById(id: string): Promise<DocumentReport | null> {
+    if (!API_URL) return null;
+    try {
+        const response = await fetch(`${API_URL}/documents/${id}`, { cache: 'no-store' });
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching document ${id}:`, error);
+        return null;
+    }
+}
 
-      const [reporter, authUser] = await Promise.all([
-        getUserById(doc.reportedBy),
-        getAuthenticatedUser(),
-      ]);
-
-      setReportedByUser(reporter);
-      setCurrentUser(authUser);
-      setIsLoading(false);
-    };
-
-    fetchDetails();
-  }, [params.id]);
+async function getUserById(id: string): Promise<User | null> {
+    if (!API_URL) return null;
+    try {
+        const response = await fetch(`${API_URL}/users/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return null;
+    }
+}
 
 
-  if (isLoading) {
-    return <Skeleton className="h-96 w-full" />
+export default async function DocumentDetailsPage({ params }: { params: { id: string } }) {
+  const document = await getDocumentById(params.id);
+  
+  if (!document) {
+    notFound();
   }
 
-  if (!document || !currentUser) {
-    return notFound();
-  }
+  const [reportedByUser, currentUser] = await Promise.all([
+    document.reportedBy ? getUserById(document.reportedBy) : Promise.resolve(null),
+    getAuthenticatedUser()
+  ]);
 
-  const isAdmin = currentUser.role === 'admin';
-  const isPolice = currentUser.role === 'police';
-  const canEdit = isAdmin || currentUser.id === document.reportedBy;
+  const isAdmin = currentUser?.role === 'admin';
+  const isPolice = currentUser?.role === 'police';
+  const isOwner = currentUser?.id === document.reportedBy;
+  const canEdit = isAdmin || isOwner;
+  const canClaim = document.status === 'found' && !isOwner;
 
   const getStatusVariant = (status: "lost" | "found" | "claimed") => {
     switch (status) {
@@ -82,16 +81,17 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
 
   const canViewPhoneNumber = () => {
     if (!reportedByUser) return false;
-    if (reportedByUser.role === 'police') return true;
     if (isAdmin || isPolice) return true;
     return false;
   }
+  
+  const isClaimedByCurrentUser = document.claims?.some(claim => claim.claimant._id === currentUser?.id && claim.status === 'pending');
 
   return (
     <div className="space-y-6">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" className="h-7 w-7" asChild>
-              <Link href="/documents/search">
+              <Link href="/search">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Back</span>
               </Link>
@@ -100,16 +100,17 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
                 {document.documentType}
             </h1>
             <Badge variant={getStatusVariant(document.status)} className="ml-auto sm:ml-0 capitalize">{document.status}</Badge>
-             {canEdit && (
-                <div className="hidden items-center gap-2 md:ml-auto md:flex">
+             <div className="hidden items-center gap-2 md:ml-auto md:flex">
+                {canEdit && (
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/documents/${document.id}/edit`}>
                             <Edit className="h-4 w-4" />
                             Edit
                         </Link>
                     </Button>
-                </div>
-            )}
+                )}
+                 {canClaim && <ClaimButton documentId={document.id} initialIsClaimedByCurrentUser={isClaimedByCurrentUser}/>}
+            </div>
         </div>
         <Card>
             <CardHeader>
@@ -183,7 +184,7 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
             </CardContent>
             <CardFooter className="border-t pt-6">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="h-4 w-4" />
+                    <UserIcon className="h-4 w-4" />
                     <span>Reported by:</span>
                     {reportedByUser ? (
                          <Button variant="link" className="p-0 h-auto" asChild>

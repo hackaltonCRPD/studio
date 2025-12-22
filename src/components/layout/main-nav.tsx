@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -14,6 +13,7 @@ import {
   HelpCircle,
   BookUser,
   Bell,
+  Hand,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -48,7 +48,8 @@ const navItems: NavItem[] = [
     }
   },
   { href: "/documents/report", label: "Report Document", icon: FilePlus, allowedRoles: ["reporter", "finder", "admin", "rc_staff"] },
-  { href: "/documents/search", label: "Search Documents", icon: FileSearch, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
+  { href: "/search", label: "Search Documents", icon: FileSearch, allowedRoles: ["admin", "rc_staff", "police", "reporter", "finder"] },
+  { href: "/claims", label: "Manage Claims", icon: Hand, allowedRoles: ["admin", "rc_staff", "police"] },
   { href: "/match-finder", label: "Match Finder", icon: BrainCircuit, allowedRoles: ["admin", "rc_staff"] },
   { 
     href: "/admin", 
@@ -56,6 +57,7 @@ const navItems: NavItem[] = [
     icon: Users, 
     allowedRoles: ["admin"],
     subItems: [
+        { href: "/admin", label: "Users", icon: Users, allowedRoles: ["admin"]},
         { href: "/admin/feedback", label: "Feedback", icon: MessageSquare, allowedRoles: ["admin"]},
         { href: "/admin/enquiries", label: "Enquiries", icon: HelpCircle, allowedRoles: ["admin"]},
     ]
@@ -81,9 +83,10 @@ export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<
         }
 
         const href = item.roleSpecificHref?.[userRole] || item.href;
+        const key = `${item.href}-${item.label}`;
 
         return item.subItems && userRole === 'admin' ? (
-            <Accordion key={item.href} type="single" collapsible defaultValue={isAdminPath ? "admin-main" : ""}>
+            <Accordion key={key} type="single" collapsible defaultValue={isAdminPath ? "admin-main" : ""}>
               <AccordionItem value="admin-main" className="border-b-0">
                 <AccordionTrigger className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:no-underline",
@@ -95,23 +98,13 @@ export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<
                    </div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1">
-                   <Link
-                      href="/admin"
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                        pathname === '/admin' && "bg-muted text-primary"
-                      )}
-                    >
-                      <Users className="h-4 w-4" />
-                      User Management
-                    </Link>
                   {item.subItems.map(subItem => (
                     <Link
-                      key={subItem.href}
+                      key={`${subItem.href}-${subItem.label}`}
                       href={subItem.href}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                        pathname.startsWith(subItem.href) && "bg-muted text-primary"
+                        pathname === subItem.href && "bg-muted text-primary"
                       )}
                     >
                       <subItem.icon className="h-4 w-4" />
@@ -124,7 +117,7 @@ export function MainNav({ userRole, className, ...props }: React.HTMLAttributes<
           ) : (
              (!item.subItems || userRole !== 'admin') &&
              <Link
-                key={href}
+                key={key}
                 href={href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",

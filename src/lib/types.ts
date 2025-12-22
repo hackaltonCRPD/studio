@@ -5,6 +5,7 @@ export type UserStatus = "active" | "suspended" | "archived";
 
 export type User = {
   id: string;
+  _id: string; // Keep _id for backend consistency
   name: string;
   email: string;
   avatarUrl?: string;
@@ -13,6 +14,7 @@ export type User = {
   credibilityScore: number;
   phoneNumber?: string;
   createdAt: string;
+  preferredContactMethod?: "email" | "phone";
 };
 
 export type DocumentReport = {
@@ -25,6 +27,15 @@ export type DocumentReport = {
   reportedBy: string; // User ID
   imageUrl?: string;
   reportDate: string;
+  claims: Claim[];
+};
+
+export type Claim = {
+    _id: string;
+    claimant: User;
+    status: "pending" | "approved" | "rejected";
+    claimDate: string;
+    notes?: string;
 };
 
 export type Feedback = {
@@ -43,6 +54,8 @@ export type Enquiry = {
   userId: string;
   date: string;
   status: "open" | "resolved";
+  name?: string;
+  email?: string;
 };
 
 export type ActivityLog = {

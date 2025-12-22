@@ -1,44 +1,41 @@
 
 import type { User } from "@/lib/types";
 
-// The backend handles sessions via HTTP-only cookies.
-// This function checks if a user is authenticated by making a request to a profile endpoint.
-const API_URL = "http://localhost:5000/api";
+// This is a mock implementation. In a real application, 
+// this would involve token validation and API calls to your auth server.
+
+const MOCK_USER: User = {
+    id: 'user1',
+    name: 'Admin User',
+    email: 'admin@docufind.com',
+    avatarUrl: 'https://images.unsplash.com/photo-1517462964-21fdcec3f25b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwZmFjZXxlbnwwfHx8fDE3NTg2OTUzNzh8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    role: 'admin',
+    status: 'active',
+    credibilityScore: 95,
+    createdAt: new Date().toISOString(),
+    phoneNumber: '123-456-7890',
+    preferredContactMethod: 'email',
+};
+
 
 export async function getAuthenticatedUser(): Promise<User | null> {
-  try {
-    // The browser will automatically send the session cookie.
-    const response = await fetch(`${API_URL}/auth/profile`, {
-        // 'include' is necessary to send cookies to a different origin
-        credentials: 'include', 
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        return null;
-      }
-      console.error("Authentication check failed:", response.statusText);
-      return null;
-    }
-
-    const user = await response.json();
-    // The backend should return an object with both `_id` and `id`.
-    return { ...user, id: user.id || user._id.toString() };
-  } catch (error) {
-    console.error("Error checking authentication status:", error);
-    return null;
+  // In a real app, you'd get a JWT from cookies or local storage,
+  // validate it, and fetch the user profile from your backend.
+  // For now, we'll check for a mock token.
+  if (typeof window !== 'undefined' && localStorage.getItem('authToken')) {
+      console.log("Authentication check: returning mock user.");
+      return Promise.resolve(MOCK_USER);
   }
+  console.log("Authentication check: no token found, returning null.");
+  return Promise.resolve(null);
 }
 
 export async function logoutUser(): Promise<boolean> {
-    try {
-        const response = await fetch(`${API_URL}/auth/logout`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return response.ok;
-    } catch (error) {
-        console.error("Error logging out:", error);
-        return false;
+    // In a real app, this would clear the auth token/cookie 
+    // and potentially call a logout endpoint.
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
     }
+    console.log("User logged out.");
+    return Promise.resolve(true);
 }

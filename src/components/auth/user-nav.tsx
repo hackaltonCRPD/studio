@@ -25,7 +25,7 @@ export function UserNav({ user }: { user: User | null }) {
   const { toast } = useToast();
   const router = useRouter();
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | undefined) => {
     if (!name) return "";
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
@@ -35,15 +35,15 @@ export function UserNav({ user }: { user: User | null }) {
   }
 
   const handleLogout = async () => {
-    const success = await logoutUser();
-    if (success) {
+    try {
+      await logoutUser();
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
       });
       router.push("/login");
-      router.refresh(); // Force a refresh to clear all state
-    } else {
+      router.refresh();
+    } catch (error) {
        toast({
         variant: "destructive",
         title: "Logout Failed",

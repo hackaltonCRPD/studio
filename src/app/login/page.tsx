@@ -4,91 +4,82 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/icons"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-
-
-const formSchema = z.object({
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(1, {
-    message: "Password is required.",
-  }),
-});
-
 
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-        credentials: 'include', // Important: sends cookies from the backend
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
+
+      const data = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed. Please check your credentials.");
+        throw new Error(data.message || "Login failed");
       }
 
-      const { user } = await response.json();
-      console.log(user);
-      
+      // Assuming the backend returns a token
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${user.name}!`,
+        description: `Welcome back!`,
       });
-
-      let dashboardUrl = "/dashboard";
-      switch(user.role) {
-        case "rc_staff":
-          dashboardUrl = "/rc-staff/dashboard";
-          break;
-        case "police":
-          dashboardUrl = "/police/dashboard";
-          break;
-        case "admin":
-          dashboardUrl = "/dashboard";
-          break;
-        default:
-          dashboardUrl = "/dashboard";
-          break;
-      }
-      
-      router.push(dashboardUrl);
+  
+      // Redirect to the dashboard
+      router.push("/dashboard");
       router.refresh();
 
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: "destructive",
         title: "Login Failed",
         description: error.message || "There was a problem logging in.",
       });
+    } finally {
+        setIsLoading(false);
     }
   }
 
+  async function handleGoogleLogin() {
+    setIsGoogleLoading(true);
+    try {
+      // This would initiate an OAuth flow with your Express backend
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+    } catch (error: any) {
+      console.error("Google Login Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Google Login Failed",
+        description: error.message || "Could not log in with Google.",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }
+  
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
@@ -105,50 +96,47 @@ export default function LoginPage() {
               Enter your email below to login to your account
             </p>
           </div>
-           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-               <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="grid gap-2">
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                   <FormItem className="grid gap-2">
-                     <div className="flex items-center">
-                        <FormLabel>Password</FormLabel>
-                        <Link
-                        href="#"
-                        className="ml-auto inline-block text-sm underline"
-                        >
-                        Forgot your password?
-                        </Link>
-                    </div>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full">
-                Login
+            <form onSubmit={handleSubmit} className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="m@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading || isGoogleLoading}
+                />
+              </div>
+               <div className="grid gap-2">
+                 <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                    href="#"
+                    className="ml-auto inline-block text-sm underline"
+                    >
+                    Forgot your password?
+                    </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading || isGoogleLoading}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <Button variant="outline" className="w-full">
-                Login with Google
+              <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || isGoogleLoading}>
+                {isGoogleLoading ? "..." : "Login with Google"}
               </Button>
             </form>
-          </Form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="underline">

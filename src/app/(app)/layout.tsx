@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAuthenticatedUser } from "@/lib/auth";
 import type { User } from "@/lib/types";
 import { MainNav } from "@/components/layout/main-nav";
 import { UserNav } from "@/components/auth/user-nav";
@@ -19,6 +18,8 @@ import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function AppLayout({
   children,
@@ -26,22 +27,31 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const authenticatedUser = await getAuthenticatedUser();
-        setUser(authenticatedUser);
-      } catch (error) {
-        console.error("Failed to fetch authenticated user:", error);
-        // Handle error case, e.g., redirect to login
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchUser();
+    getAuthenticatedUser().then(user => {
+        setUser(user);
+        setLoading(false);
+    });
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get('q') as string;
+    router.push(`/search?q=${query}`);
+  }
+
+  if (loading) {
+     return (
+       <div className="flex items-center justify-center h-screen">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <p className="ml-4">Loading user...</p>
+       </div>
+     )
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -87,30 +97,30 @@ export default function AppLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <form>
+            <form onSubmit={handleSearchSubmit}>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
+                  name="q"
                   placeholder="Search documents..."
                   className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                 />
               </div>
             </form>
           </div>
-          {isLoading ? (
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-9 w-9 rounded-full" />
-            </div>
-          ) : user ? (
+          {user ? (
             <>
               <NotificationsPopover user={user} />
               <ThemeToggle />
               <UserNav user={user} />
             </>
-          ) : null}
+          ) : (
+             <div className="flex items-center gap-4">
+              <Button asChild><Link href="/login">Login</Link></Button>
+              <Button variant="outline" asChild><Link href="/signup">Sign Up</Link></Button>
+            </div>
+          )}
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">
           {children}

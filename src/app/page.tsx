@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export default function LandingPage() {
              </Link>
           </Button>
           <Button asChild>
-            <Link href="/login">
+            <Link href="/signup">
                 Sign Up <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -83,7 +84,7 @@ export default function LandingPage() {
                     </Link>
                   </Button>
                    <Button size="lg" variant="outline" asChild>
-                     <Link href="/login">
+                     <Link href="/search">
                       Search for a Found Item
                     </Link>
                   </Button>

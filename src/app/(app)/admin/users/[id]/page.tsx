@@ -1,7 +1,4 @@
 
-
-"use client";
-
 import {
   Card,
   CardContent,
@@ -10,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getUserById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -18,43 +14,26 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import type { User, UserStatus } from "@/lib/types";
-import { ArrowLeft, Edit, FileText } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, Edit, FileText, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
 
+const API_URL = process.env.API_URL_INTERNAL;
 
-export default function UserDetailsPage({ params }: { params: { id: string } }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        setIsLoading(true);
-        getUserById(params.id).then(fetchedUser => {
-            if (!fetchedUser) {
-                notFound();
-                return;
-            }
-            setUser(fetchedUser);
-            setIsLoading(false);
-        })
-    }, [params.id]);
-
-
-    if(isLoading) {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Skeleton className="h-7 w-7 rounded-full" />
-                    <Skeleton className="h-6 w-32" />
-                    <div className="hidden items-center gap-2 md:ml-auto md:flex">
-                        <Skeleton className="h-8 w-20" />
-                    </div>
-                </div>
-                <Skeleton className="h-96 w-full" />
-            </div>
-        )
+async function getUserById(id: string): Promise<User | null> {
+    try {
+        const response = await fetch(`${API_URL}/users/${id}`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return { ...data, id: data._id.toString() };
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return null;
     }
+}
+
+
+export default async function UserDetailsPage({ params }: { params: { id: string } }) {
+    const user = await getUserById(params.id);
 
     if (!user) {
         notFound();
@@ -145,6 +124,13 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Member Since</h3>
                                 <p className="text-sm">{format(new Date(user.createdAt), "PPP")}</p>
                             </div>
+                            <div>
+                                <h3 className="text-sm font-medium text-muted-foreground mb-1">Preferred Contact Method</h3>
+                                <div className="flex items-center gap-2 text-sm">
+                                    {user.preferredContactMethod === "email" ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                                    <span className="capitalize">{user.preferredContactMethod || "Not set"}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -160,3 +146,5 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
         </div>
     )
 }
+
+    

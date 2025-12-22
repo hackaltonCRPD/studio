@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -29,6 +28,8 @@ import { getAuthenticatedUser } from "@/lib/auth"
 import { useEffect, useState } from "react"
 import type { User } from "@/lib/types"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const formSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters."),
   message: z.string().min(10, "Message must be at least 10 characters."),
@@ -56,13 +57,15 @@ export default function FeedbackPage() {
         return;
     }
     try {
-        const response = await fetch(`http://localhost:5000/api/feedback`, {
+        const feedbackData = { ...values, userId: user.id };
+        const response = await fetch(`${API_URL}/feedback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...values, userId: user.id }),
-            credentials: 'include',
+            body: JSON.stringify(feedbackData),
         });
-        if (!response.ok) throw new Error("Failed to submit feedback");
+        if (!response.ok) {
+            throw new Error('Failed to create feedback');
+        }
         
         toast({
         title: "Feedback Submitted",
@@ -130,3 +133,5 @@ export default function FeedbackPage() {
     </Card>
   )
 }
+
+    

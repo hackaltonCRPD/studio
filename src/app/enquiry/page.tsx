@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,6 +24,11 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Send } from "lucide-react"
+import { getAuthenticatedUser } from "@/lib/auth"
+import { useEffect, useState } from "react"
+import type { User } from "@/lib/types"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -35,25 +39,41 @@ const formSchema = z.object({
 
 export default function EnquiryPage() {
   const { toast } = useToast()
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    getAuthenticatedUser().then(setUser);
+  }, []);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      email: "",
+      name: user?.name || "",
+      email: user?.email || "",
       subject: "",
       question: "",
     },
   })
 
+  // Set form values once user is loaded
+  useEffect(() => {
+    if(user) {
+        form.setValue('name', user.name);
+        form.setValue('email', user.email);
+    }
+  }, [user, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch(`http://localhost:5000/api/enquiries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+      const enquiryData = { ...values, userId: user?.id || 'anonymous' };
+      const response = await fetch(`${API_URL}/enquiries`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(enquiryData),
       });
-
-      if (!response.ok) throw new Error("Failed to submit enquiry");
+      if (!response.ok) {
+          throw new Error('Failed to create enquiry');
+      }
 
       toast({
         title: "Enquiry Submitted",
@@ -147,3 +167,5 @@ export default function EnquiryPage() {
     </Card>
   )
 }
+
+    

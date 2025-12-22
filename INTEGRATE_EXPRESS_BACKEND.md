@@ -107,7 +107,9 @@ docufind-backend/
     app.use(express.json({ extended: false })); // To accept JSON data in the body
 
     // Define Routes
-    app.use('/api', require('./routes/api'));
+    app.use('/api/users', require('./routes/users'));
+    app.use('/api/documents', require('./routes/documents'));
+    // ... other routes
 
     const PORT = process.env.PORT || 5000;
 
@@ -148,6 +150,7 @@ const UserSchema = new mongoose.Schema({
   },
   credibilityScore: { type: Number, default: 80 },
   phoneNumber: { type: String },
+  preferredContactMethod: { type: String, enum: ["email", "phone"] },
 }, { timestamps: true }); // Adds createdAt and updatedAt
 
 module.exports = mongoose.model('User', UserSchema);
@@ -178,46 +181,29 @@ module.exports = mongoose.model('DocumentReport', DocumentReportSchema);
 
 ## 4. API Endpoints
 
-Here are the RESTful endpoints your backend should expose.
+Here are the RESTful endpoints your backend should expose. Each endpoint would have a corresponding controller function in the `controllers` directory.
 
 ### User Endpoints (`/api/users`)
 
-| Method | Endpoint              | Description                      | Controller Function   |
-| :----- | :-------------------- | :------------------------------- | :-------------------- |
-| `GET`    | `/users`              | Get all users (with filters)     | `getUsers`            |
-| `GET`    | `/users/:id`          | Get a single user by ID          | `getUserById`         |
-| `POST`   | `/users`              | Create a new user (Sign up)      | `createUser`          |
-| `PUT`    | `/users/:id`          | Update a user's details          | `updateUser`          |
-| `DELETE` | `/users/:id`          | Archive/delete a user            | `deleteUser`          |
-| `GET`    | `/users/:id/activity` | Get activity log for a user      | `getUserActivity`     |
+| Method | Endpoint              | Description                      |
+| :----- | :-------------------- | :------------------------------- |
+| `GET`    | `/users`              | Get all users (with filters)     |
+| `GET`    | `/users/:id`          | Get a single user by ID          |
+| `POST`   | `/users`              | Create a new user (Sign up)      |
+| `PUT`    | `/users/:id`          | Update a user's details          |
+| `DELETE` | `/users/:id`          | Archive/delete a user            |
+| `GET`    | `/users/:id/activity` | Get activity log for a user      |
 
 ### Document Report Endpoints (`/api/documents`)
 
-| Method | Endpoint      | Description                      | Controller Function   |
-| :----- | :------------ | :------------------------------- | :-------------------- |
-| `GET`    | `/documents`  | Get all documents (with filters) | `getDocuments`        |
-| `GET`    | `/documents/:id`| Get a single document by ID      | `getDocumentById`     |
-| `POST`   | `/documents`  | Create a new document report     | `createDocument`      |
-| `PUT`    | `/documents/:id`| Update a document report         | `updateDocument`      |
+| Method | Endpoint      | Description                      |
+| :----- | :------------ | :------------------------------- |
+| `GET`    | `/documents`  | Get all documents (with filters) |
+| `GET`    | `/documents/:id`| Get a single document by ID      |
+| `POST`   | `/documents`  | Create a new document report     |
+| `PUT`    | `/documents/:id`| Update a document report         |
 
-### Feedback & Enquiry Endpoints
-
-| Method | Endpoint        | Description                   |
-| :----- | :-------------- | :---------------------------- |
-| `GET`    | `/feedback`     | Get all feedback submissions  |
-| `POST`   | `/feedback`     | Submit new feedback           |
-| `PUT`    | `/feedback/:id` | Update feedback status        |
-| `GET`    | `/enquiries`    | Get all enquiry submissions   |
-| `POST`   | `/enquiries`    | Submit new enquiry            |
-| `PUT`    | `/enquiries/:id`| Update enquiry status         |
-
-### Notification Endpoints
-
-| Method | Endpoint              | Description                           |
-| :----- | :-------------------- | :------------------------------------ |
-| `GET`    | `/notifications/:userId` | Get all notifications for a user |
-| `PUT`    | `/notifications/:id`     | Mark a notification as read       |
-| `PUT`    | `/notifications/read-all/:userId` | Mark all as read for a user    |
+*(And so on for Feedback, Enquiries, Notifications...)*
 
 ## 5. Frontend Integration (Next.js)
 
@@ -232,43 +218,43 @@ In your Next.js project, create a `.env.local` file and add the URL of your back
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ```
 
-### Step 5.2: Refactor Data Fetching
+### Step 5.2: Refactor Data Layer
 
-You will need to replace the functions in `src/lib/data.ts` with functions that make `fetch` requests to your new API.
+You will need to replace the functions in `src/lib/data.ts` (which currently use the Firebase SDK) with functions that make `fetch` requests to your new API.
 
-**Example: `src/lib/data.ts` (Refactored)**
+**Example: `src/lib/data.ts` (Refactored for Express)**
 ```typescript
 import type { User, DocumentReport } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --- USER FUNCTIONS ---
-export async function getUsers(filters?: Record<string, string>): Promise<User[]> {
+export async function getUsers(filters?: { status?: string, role?: string }): Promise<User[]> {
     const query = new URLSearchParams(filters).toString();
     const response = await fetch(`${API_URL}/users?${query}`);
     if (!response.ok) {
         throw new Error('Failed to fetch users');
     }
     const data = await response.json();
-    // The backend should return `_id`. The frontend expects `id`.
-    return data.map((user: any) => ({ ...user, id: user._id }));
+    // The backend returns `_id`. The frontend expects `id`.
+    return data.map((user: any) => ({ ...user, id: user._id.toString() }));
 }
 
 export async function getUserById(id: string): Promise<User | null> {
     const response = await fetch(`${API_URL}/users/${id}`);
     if (!response.ok) return null;
     const data = await response.json();
-    return { ...data, id: data._id };
+    return { ...data, id: data._id.toString() };
 }
 
 // --- DOCUMENT FUNCTIONS ---
 export async function getDocuments(): Promise<DocumentReport[]> {
-    const response = await fetch(`${API_URL}/documents`);
+    const response = await fetch(`${API_L}/documents`);
     if (!response.ok) {
         throw new Error('Failed to fetch documents');
     }
     const data = await response.json();
-    return data.map((doc: any) => ({ ...doc, id: doc._id }));
+    return data.map((doc: any) => ({ ...doc, id: doc._id.toString() }));
 }
 
 // ... continue this pattern for all other data fetching functions.
@@ -283,7 +269,10 @@ Client components that handle form submissions (e.g., `ReportDocumentPage`, `Fee
 
 **Example: `src/app/(app)/documents/report/page.tsx` (Form `onSubmit`)**
 ```typescript
+// This is an example of what the onSubmit would look like if using an Express backend
 async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Note: The actual app uses Firebase directly. This is a hypothetical example.
+    if (!user) return; // 'user' would come from your auth context
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents`, {
             method: 'POST',
@@ -292,7 +281,7 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
             },
             body: JSON.stringify({
                 ...values,
-                reportedBy: MOCK_USER.id // Pass the current user's ID
+                reportedBy: user.id // Pass the current user's ID
             }),
         });
 
@@ -316,4 +305,4 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
 }
 ```
 
-By following this guide, you will successfully decouple your frontend from your data layer, resulting in a more robust, scalable, and professional application architecture.
+By following this guide, you can successfully decouple your frontend from your data layer using a separate Express backend, resulting in a more robust and scalable application architecture.
